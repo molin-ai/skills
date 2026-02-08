@@ -1,5 +1,5 @@
 ---
-name: shoprenter-cli
+name: shoprenter
 description: Shoprenter CLI integration via `n shoprenter` commands. Use when working with the Shoprenter e-commerce platform, running `n shoprenter` commands, setting up Shoprenter authentication, exchanging SSO tokens for access tokens, refreshing expired tokens, or modifying Shoprenter CLI subcommands. Also use when the user mentions Shoprenter shop management, product/order/customer queries via the n-cli, or needs to connect to a Shoprenter store.
 ---
 

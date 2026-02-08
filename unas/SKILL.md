@@ -1,12 +1,12 @@
 ---
-name: unas-skill
+name: unas
 description: UNAS.hu Hungarian e-commerce platform - XML API, theme customization. Use for UNAS webshops, API calls, design changes.
-allowed-tools: Bash, Read, Glob, Grep, Write, Edit
 ---
 
 # UNAS.hu API Reference
 
 ## Safety Rules
+
 - **Confirm before modifying production** - orders, products, stock
 - **GET first** - understand data before set/delete operations
 - **Never expose tokens** in outputs
@@ -71,22 +71,22 @@ curl -X POST "https://api.unas.eu/shop/getProduct" \
 
 ## API Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `login` | Get auth token |
-| `getProduct` / `setProduct` | Products (query/modify) |
-| `getProductDB` / `setProductDB` | Product database |
-| `getOrder` / `setOrder` | Orders |
-| `getStock` / `setStock` | Inventory |
-| `getCategory` / `setCategory` | Categories |
-| `getCustomer` / `setCustomer` | Customers |
-| `getStorage` / `setStorage` | Warehouses |
-| `getNewsletter` / `setNewsletter` | Newsletter subscribers |
-| `getProductParameter` / `setProductParameter` | Product attributes |
-| `getDeliveryPoint` / `setDeliveryPoint` | Delivery/pickup points |
-| `getPackageOffer` / `setPackageOffer` | Package offers |
-| `getProductReview` / `setProductReview` | Product reviews |
-| `checkCustomer` | Validate customer |
+| Endpoint                                      | Description             |
+| --------------------------------------------- | ----------------------- |
+| `login`                                       | Get auth token          |
+| `getProduct` / `setProduct`                   | Products (query/modify) |
+| `getProductDB` / `setProductDB`               | Product database        |
+| `getOrder` / `setOrder`                       | Orders                  |
+| `getStock` / `setStock`                       | Inventory               |
+| `getCategory` / `setCategory`                 | Categories              |
+| `getCustomer` / `setCustomer`                 | Customers               |
+| `getStorage` / `setStorage`                   | Warehouses              |
+| `getNewsletter` / `setNewsletter`             | Newsletter subscribers  |
+| `getProductParameter` / `setProductParameter` | Product attributes      |
+| `getDeliveryPoint` / `setDeliveryPoint`       | Delivery/pickup points  |
+| `getPackageOffer` / `setPackageOffer`         | Package offers          |
+| `getProductReview` / `setProductReview`       | Product reviews         |
+| `checkCustomer`                               | Validate customer       |
 
 **URL pattern:** `https://api.unas.eu/shop/{endpoint}`
 
@@ -95,6 +95,7 @@ curl -X POST "https://api.unas.eu/shop/getProduct" \
 ## Request/Response Format
 
 **Request (XML):**
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Params>
@@ -104,6 +105,7 @@ curl -X POST "https://api.unas.eu/shop/getProduct" \
 ```
 
 **Response (Success - HTTP 200):**
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Products>
@@ -117,6 +119,7 @@ curl -X POST "https://api.unas.eu/shop/getProduct" \
 ```
 
 **Response (Error - HTTP 400):**
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Error>Error message</Error>
@@ -162,10 +165,10 @@ curl -X POST "https://api.unas.eu/shop/setProduct" \
 
 ## Rate Limits
 
-| Operation | PREMIUM | VIP |
-|-----------|---------|-----|
+| Operation               | PREMIUM | VIP     |
+| ----------------------- | ------- | ------- |
 | setProduct (≤100 items) | 1000/hr | 3000/hr |
-| setProduct (>100 items) | 30/hr | 90/hr |
+| setProduct (>100 items) | 30/hr   | 90/hr   |
 
 ---
 
@@ -174,6 +177,7 @@ curl -X POST "https://api.unas.eu/shop/setProduct" \
 ### Template Engine - TWIG
 
 UNAS uses TWIG templating with **two-level rendering**:
+
 - **First pass:** `{% %}` and `{{ }}` markers (standard TWIG)
 - **Second pass:** `[% %]` and `[[ ]]` markers (UNAS-specific)
 
@@ -200,6 +204,7 @@ box_[name]_[x].html    # Box/widget templates
 ### Customization Options
 
 **Via Admin Panel:**
+
 ```
 Admin → Megjelenés → Kinézet testreszabása
 ```
@@ -222,8 +227,13 @@ Admin → Megjelenés → Kinézet testreszabása
 
 ```css
 /* Admin → Kinézet testreszabása → Egyedi CSS */
-.btn-primary { background-color: #your-brand-color; }
-.product-price { font-size: 1.2em; color: #e74c3c; }
+.btn-primary {
+  background-color: #your-brand-color;
+}
+.product-price {
+  font-size: 1.2em;
+  color: #e74c3c;
+}
 ```
 
 **Docs:** unas.hu/tudastar/design
@@ -242,10 +252,10 @@ Admin → Megjelenés → Kinézet testreszabása
 
 ### Integration Types
 
-| Type | Description | Recommended |
-|------|-------------|-------------|
-| **Embedded** | App UI inside UNAS admin panel | ✅ Yes |
-| **Redirected** | Opens external URL | ❌ No |
+| Type           | Description                    | Recommended |
+| -------------- | ------------------------------ | ----------- |
+| **Embedded**   | App UI inside UNAS admin panel | ✅ Yes      |
+| **Redirected** | Opens external URL             | ❌ No       |
 
 ### How It Works
 
@@ -292,6 +302,7 @@ composer require vadgab/yii2-unas-api
 ```
 
 **Laravel example:**
+
 ```php
 $client = app('unas.client');
 $client->getProducts()->chunk(function ($products) {
@@ -303,12 +314,12 @@ $client->getProducts()->chunk(function ($products) {
 
 ## Troubleshooting
 
-| Error | Fix |
-|-------|-----|
-| HTTP 400 | Check XML format, required fields |
-| Invalid token | Re-authenticate, token expired |
-| Rate limited | Wait, reduce batch size |
-| No access | Check subscription (PREMIUM/VIP required) |
+| Error         | Fix                                       |
+| ------------- | ----------------------------------------- |
+| HTTP 400      | Check XML format, required fields         |
+| Invalid token | Re-authenticate, token expired            |
+| Rate limited  | Wait, reduce batch size                   |
+| No access     | Check subscription (PREMIUM/VIP required) |
 
 **Enable API:** Admin → Beállítások → Külső kapcsolatok → API kapcsolat → Enable
 

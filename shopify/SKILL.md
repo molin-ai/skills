@@ -1,7 +1,6 @@
 ---
-name: shopify-skill
+name: shopify
 description: Shopify CLI for apps, themes, Hydrogen storefronts. Use for shopify commands and development workflows.
-allowed-tools: Bash(shopify:*), Bash(npm:*), Bash(yarn:*), Bash(pnpm:*), Read, Glob, Grep
 ---
 
 # Shopify CLI Reference
@@ -9,6 +8,7 @@ allowed-tools: Bash(shopify:*), Bash(npm:*), Bash(yarn:*), Bash(pnpm:*), Read, G
 Commands: `shopify [topic] [command]`
 
 ## Safety Rules
+
 - **Use `theme dev` first** - creates temporary dev theme (safe)
 - **Never use `--allow-live`** unless user confirms
 - **Warn before:** `theme push` to live, `theme publish`, `app deploy --force`
@@ -40,11 +40,13 @@ shopify app deploy                        # Deploy (--version, --message, --no-r
 ```
 
 **Functions:**
+
 ```bash
 shopify app function build|run|replay|schema|typegen
 ```
 
 **Extensions & Config:**
+
 ```bash
 shopify app generate extension            # New extension
 shopify app config link|pull|use          # Config management
@@ -77,6 +79,7 @@ shopify theme publish                                   # Makes theme live!
 ```
 
 **Recommended flow:**
+
 ```
 1. theme dev           → Work on temp dev theme
 2. theme push --unpublished  → Save to unpublished
@@ -113,12 +116,14 @@ shopify hydrogen deploy                   # Deploy to Oxygen (--env, --token)
 ```
 
 **Link & Env:**
+
 ```bash
 shopify hydrogen link|unlink|list         # Connect to storefront
 shopify hydrogen env list|pull|push       # Environment vars
 ```
 
 **Code Gen & Auth:**
+
 ```bash
 shopify hydrogen codegen                  # GraphQL types
 shopify hydrogen generate route|routes    # Create routes
@@ -160,6 +165,7 @@ shopify theme push --theme "Development" --nodelete
 | `SHOPIFY_CLI_NO_ANALYTICS` | Disable analytics (`1`) |
 
 **.shopifyignore:** Exclude files from push/pull
+
 ```
 config/settings_data.json
 node_modules/
@@ -170,10 +176,10 @@ node_modules/
 
 ## Troubleshooting
 
-| Issue | Fix |
-|-------|-----|
-| Command fails | `--verbose` for details |
-| Unexpected behavior | `--reset` to clear cache |
-| Dev theme gone | Deleted on logout - use `--unpublished` to save |
-| Theme not found | `shopify theme list` to check IDs |
-| Auth errors | `shopify auth login` |
+| Issue               | Fix                                             |
+| ------------------- | ----------------------------------------------- |
+| Command fails       | `--verbose` for details                         |
+| Unexpected behavior | `--reset` to clear cache                        |
+| Dev theme gone      | Deleted on logout - use `--unpublished` to save |
+| Theme not found     | `shopify theme list` to check IDs               |
+| Auth errors         | `shopify auth login`                            |

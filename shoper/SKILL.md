@@ -1,12 +1,12 @@
 ---
-name: shoper-skill
+name: shoper
 description: Shoper.pl e-commerce - REST API, themes, webhooks. Use for Shoper stores, API calls, theme customization.
-allowed-tools: Bash, Read, Glob, Grep, Write, Edit
 ---
 
 # Shoper.pl Reference
 
 ## Safety Rules
+
 - **Confirm before modifying production** - orders, products, customers
 - **GET first** - understand data before POST/PUT/DELETE
 - **Never expose tokens** in outputs
@@ -30,6 +30,7 @@ curl -H "Authorization: Bearer {token}" "https://{shop}.shoparena.pl/webapi/rest
 **Get credentials:** Admin → Integracje → WebAPI (not admin login)
 
 **Env vars method:**
+
 ```bash
 export SHOPER_URL="shop.shoparena.pl" SHOPER_USER="user" SHOPER_PASS="pass"
 TOKEN=$(curl -s -X POST "https://$SHOPER_URL/webapi/rest/auth" -u "$SHOPER_USER:$SHOPER_PASS" | jq -r '.access_token')
@@ -39,18 +40,19 @@ TOKEN=$(curl -s -X POST "https://$SHOPER_URL/webapi/rest/auth" -u "$SHOPER_USER:
 
 ## API Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `/products` | Product catalog |
-| `/categories` | Categories |
-| `/orders` | Orders |
-| `/order-products` | Order items |
-| `/customers` | Customers |
-| `/webhooks` | Event subscriptions |
-| `/statuses` `/deliveries` `/payments` | Order config |
-| `/producers` `/taxes` `/currencies` | Catalog config |
+| Endpoint                              | Description         |
+| ------------------------------------- | ------------------- |
+| `/products`                           | Product catalog     |
+| `/categories`                         | Categories          |
+| `/orders`                             | Orders              |
+| `/order-products`                     | Order items         |
+| `/customers`                          | Customers           |
+| `/webhooks`                           | Event subscriptions |
+| `/statuses` `/deliveries` `/payments` | Order config        |
+| `/producers` `/taxes` `/currencies`   | Catalog config      |
 
 **CRUD:**
+
 ```bash
 GET    /products              # List
 GET    /products/{id}         # Single
@@ -78,6 +80,7 @@ DELETE /products/{id}         # Delete (DANGER)
 ## Theme Development
 
 ### Safe Workflow (NEVER edit live template)
+
 ```
 1. DUPLICATE → Admin: Wygląd i treści → Wygląd sklepu → hover → "Duplikuj"
 2. DEVELOP   → Edit the copy only
@@ -85,6 +88,7 @@ DELETE /products/{id}         # Delete (DANGER)
 ```
 
 ### Local Dev (Safe Mode)
+
 ```bash
 git clone https://github.com/arktosk/shoper-vue-boilerplate && cd shoper-vue-boilerplate
 npm install
@@ -94,6 +98,7 @@ npm run deploy     # Deploy when ready
 ```
 
 ### Twig Syntax
+
 ```twig
 {{ product.name }}                           {# Output #}
 {{ product.price | money }}                  {# Filter #}
@@ -107,6 +112,7 @@ npm run deploy     # Deploy when ready
 **Product props:** `product_id`, `name`, `description`, `price`, `price_gross`, `stock.quantity`, `producer.name`, `main_image.url`, `variants`, `images`
 
 ### File Structure
+
 ```
 theme/
 ├── layouts/default.tpl
@@ -117,6 +123,7 @@ theme/
 ```
 
 ### Macros
+
 ```twig
 {% import 'macros/buttons.tpl' as buttons %}
 {% import 'macros/forms.tpl' as forms %}
@@ -125,10 +132,11 @@ theme/
 ```
 
 ### JS API
+
 ```javascript
-Shoper.EventBus.emit('cart:add', {productId: 123, quantity: 1});
-Shoper.EventBus.on('cart:updated', (data) => {});
-Shoper.Forms.validate('#form');
+Shoper.EventBus.emit("cart:add", { productId: 123, quantity: 1 });
+Shoper.EventBus.on("cart:updated", (data) => {});
+Shoper.Forms.validate("#form");
 ```
 
 ---
@@ -138,6 +146,7 @@ Shoper.Forms.validate('#form');
 **OAuth Flow:** User installs app → Redirect with auth code → Exchange for access_token → Use token for API
 
 **Libraries:**
+
 ```bash
 composer require dreamcommerce/shop-appstore-lib  # PHP (official)
 npm install shoper-api                            # Node.js
@@ -166,11 +175,11 @@ curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/jso
 
 ## Troubleshooting
 
-| Error | Fix |
-|-------|-----|
-| 401 | Token expired/invalid - re-auth |
-| 404 | Check resource ID and URL |
-| 422 | Missing required fields |
+| Error | Fix                             |
+| ----- | ------------------------------- |
+| 401   | Token expired/invalid - re-auth |
+| 404   | Check resource ID and URL       |
+| 422   | Missing required fields         |
 
 **Debug:** `curl -v ...` for full response
 
