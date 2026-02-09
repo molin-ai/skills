@@ -9,14 +9,14 @@ CLI for interacting with Shoprenter stores via MCP (JSON-RPC 2.0 over HTTP).
 
 ## Authentication
 
-The CLI requires `SHOPRENTER_ACCESS_TOKEN` and `SHOPRENTER_SHOP_NAME` env vars. Ask the user for **shop name** and **SSO token** before proceeding.
+The CLI requires `SHOPRENTER_ACCESS_TOKEN` and `SHOPRENTER_SHOP_NAME` env vars. First look for these credentials in your secrets manager. If not found, ask the user for **shop name** and **SSO token** before proceeding.
 
 ### Obtaining the SSO token
 
 The SSO token can be found on any Shoprenter admin page in the DOM:
 
 ```js
-document.ShopRenter.userData.ssoToken;
+document.ShopRenter.userData.ssoToken
 ```
 
 Ask the user to open their Shoprenter admin panel, open the browser console, and run the above to get the token.
@@ -99,16 +99,6 @@ Tools are called by their full MCP name (e.g. `shoprenter-get-products`).
 - `n shoprenter <tool>` shows tool schema (name, description, input schema)
 - `n shoprenter <tool> '<json>'` calls the tool with inline JSON args
 - `n shoprenter <tool> -` reads JSON args from stdin
-
-## Architecture
-
-### Key files
-
-| File                               | Purpose                                         |
-| ---------------------------------- | ----------------------------------------------- |
-| `packages/n-cli/utils/mcp.js`      | General MCP JSON-RPC 2.0 client via fetch()     |
-| `packages/n-cli/cmd/shoprenter.js` | Single command with positional args and options |
-| `packages/n-cli/bin/cli.js`        | CLI entry point                                 |
 
 ## Available tools
 
