@@ -25,8 +25,29 @@ shopify help theme dev          # Command help
 shopify version                 # Check version
 ```
 
-**Install:** `npm install -g @shopify/cli@latest` (or yarn/pnpm/brew)
+**Install:** `npm install -g @shopify/cli@latest` or `npx shopify`
 **Requires:** Node.js 20.10+, Git 2.28.0+
+
+---
+
+## Authentication (`n shopify auth`)
+
+Authenticate with Shopify Identity using the `n` CLI. First-time setup requires `login` which returns a URL — show this URL to the user so they can authenticate in their browser. Once they confirm they have logged in, run `exchange` to complete the token swap.
+
+### Commands
+
+```bash
+n shopify auth login       # get verification URL and user code (show URL to user)
+n shopify auth exchange    # after user has logged in, exchange device code for token
+n shopify auth status      # check current auth status (scopes, expiry)
+n shopify auth logout      # clear stored credentials
+```
+
+### First-time flow
+
+1. Run `n shopify auth login` — outputs a verification URL and user code.
+2. Show the URL to the user and ask them to open it and authenticate.
+3. Once the user confirms they have logged in, run `n shopify auth exchange` to store the token.
 
 ---
 
