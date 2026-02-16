@@ -1,110 +1,66 @@
 ---
 name: shoprenter
-description: Shoprenter CLI integration via `n shoprenter` commands. Use when working with the Shoprenter e-commerce platform, running `n shoprenter` commands, setting up Shoprenter authentication, exchanging SSO tokens for access tokens, refreshing expired tokens, or modifying Shoprenter CLI subcommands. Also use when the user mentions Shoprenter shop management, product/order/customer queries via the n-cli, or needs to connect to a Shoprenter store.
+description: Shoprenter CLI integration via `n shoprenter` commands. Use when working with the Shoprenter e-commerce platform, running `n shoprenter` commands, setting up Shoprenter authentication. Also use when the user mentions Shoprenter shop management, product/order/customer queries via the n-cli, or needs to connect to a Shoprenter store.
 ---
 
 # Shoprenter CLI
 
-CLI for interacting with Shoprenter stores via MCP (JSON-RPC 2.0 over HTTP).
+Use `n shoprenter` to manage Shoprenter stores — authenticate, call the official MCP, query products/orders/customers.
 
-## Authentication
+The `shopname` is the subdomain, e.g. `myshop` from `myshop.shoprenter.hu`.
 
-The CLI requires `SHOPRENTER_ACCESS_TOKEN` and `SHOPRENTER_SHOP_NAME` env vars. First look for these credentials in your secrets manager. If not found, ask the user for **shop name** and **SSO token** before proceeding.
+## Getting started
 
-### Obtaining the SSO token
-
-The SSO token can be found on any Shoprenter admin page in the DOM:
-
-```js
-document.ShopRenter.userData.ssoToken
-```
-
-Ask the user to open their Shoprenter admin panel, open the browser console, and run the above to get the token.
-
-### Obtaining an access token from an SSO token
-
-Exchange an SSO token for an OAuth2 access token using the Token Exchange grant (RFC 8693). The `SHOPRENTER_CLIENT_ID` and `SHOPRENTER_CLIENT_SECRET` are available as global env vars.
+### 1. Log in
 
 ```sh
-curl -s -X POST "https://oauth.app.shoprenter.net/{shopName}/admin/token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "grant_type": "token_exchange",
-    "subject_token_type": "sso_token",
-    "subject_token": "{ssoToken}",
-    "client_id": "'"$SHOPRENTER_MCP_CLIENT_ID"'",
-    "client_secret": "'"$SHOPRENTER_MCP_CLIENT_SECRET"'"
-  }'
+n shoprenter auth login            # auto-detect shops linked to your Molin account
+n shoprenter auth login molinai    # log in to a specific shop
 ```
 
-Response (access token valid 1 hour, refresh token valid 30 days):
+If the shop hasn't approved scopes yet, you'll see an approval URL to visit first.
 
-```json
-{
-  "access_token": "eyJ...",
-  "token_type": "Bearer",
-  "expires_in": 3600,
-  "refresh_token": "eyJ..."
-}
-```
+Tokens are cached locally and refreshed automatically. You only need to log in once.
 
-### Refreshing an expired access token
-
-When an access token expires (after 1 hour), exchange the refresh token for a new access token:
+### 2. Check status
 
 ```sh
-curl -s -X POST "https://oauth.app.shoprenter.net/{shopName}/admin/token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "grant_type": "refresh_token",
-    "client_id": "'"$SHOPRENTER_MCP_CLIENT_ID"'",
-    "client_secret": "'"$SHOPRENTER_MCP_CLIENT_SECRET"'",
-    "refresh_token": "{refreshToken}"
-  }'
+n shoprenter auth status           # show which shop is active and all linked shops
 ```
 
-The refresh token is valid for 30 days.
+### 3. Use tools
 
-## Usage
+```sh
+n shoprenter mcp list                    # list all available tools
+n shoprenter mcp list --descriptions     # include tool descriptions
+n shoprenter mcp run <tool>              # show a tool's schema (no call)
+n shoprenter mcp run <tool> '{}'         # call a tool with empty params
+n shoprenter mcp run <tool> '{"limit":5}'          # call with params
+echo '{"limit":5}' | n shoprenter mcp run <tool> - # pipe JSON from stdin
+```
 
-Set env vars and run commands directly:
+### Output options
+
+| Flag             | Effect                            |
+| ---------------- | --------------------------------- |
+| `--descriptions` | include tool descriptions in list |
+| `--json`         | output as JSON                    |
+| `--raw`          | output raw text content only      |
+
+### Env var override (scripts/CI)
+
+Skip the login flow by setting these env vars:
 
 ```sh
 export SHOPRENTER_ACCESS_TOKEN="eyJ..."
 export SHOPRENTER_SHOP_NAME="myshopname"
-
-n shoprenter list                                            # list all available tools
-n shoprenter list --withDescriptions                         # list with descriptions
-n shoprenter shoprenter-test-connection                      # show tool schema
-n shoprenter shoprenter-test-connection '{}'                 # call tool (no params)
-n shoprenter shoprenter-get-products '{"limit":5}'           # call tool with inline JSON
-echo '{"limit":5}' | n shoprenter shoprenter-get-products -  # call tool with stdin JSON
-n shoprenter shoprenter-get-products '{"limit":5}' --json    # output full JSON-RPC result
-n shoprenter shoprenter-get-products '{"limit":5}' --raw     # output raw text content only
 ```
-
-Tools are called by their full MCP name (e.g. `shoprenter-get-products`).
-
-### Options
-
-| Option               | Description                       |
-| -------------------- | --------------------------------- |
-| `--withDescriptions` | include tool descriptions in list |
-| `--json`             | output as JSON (for scripting)    |
-| `--raw`              | output raw text content           |
-
-### Behaviour
-
-- `n shoprenter` or `n shoprenter list` lists all tools
-- `n shoprenter <tool>` shows tool schema (name, description, input schema)
-- `n shoprenter <tool> '<json>'` calls the tool with inline JSON args
-- `n shoprenter <tool> -` reads JSON args from stdin
 
 ## Available tools
 
-To discover params for any tool, run `n shoprenter <tool-name>` (no args) to see the input schema.
+Run `n shoprenter mcp run <tool-name>` (no args) to see a tool's input schema.
 
-### Products (`mcp.product.product:read`, `mcp.product.product:write`)
+### Products
 
 | Tool                                            | Params                                                    |
 | ----------------------------------------------- | --------------------------------------------------------- |
@@ -127,14 +83,14 @@ To discover params for any tool, run `n shoprenter <tool-name>` (no args) to see
 | `shoprenter-get-product-category-relation`      | `id`                                                      |
 | `shoprenter-get-product-attributes`             | `productId?`                                              |
 
-### Product addons (`mcp.product.addon:read`)
+### Product addons
 
 | Tool                            | Params                 |
 | ------------------------------- | ---------------------- |
 | `shoprenter-get-product-addons` | `page?, limit?, full?` |
 | `shoprenter-get-product-addon`  | `id`                   |
 
-### Categories (`mcp.product.category:read`)
+### Categories
 
 | Tool                                               | Params                                                |
 | -------------------------------------------------- | ----------------------------------------------------- |
@@ -145,7 +101,7 @@ To discover params for any tool, run `n shoprenter <tool-name>` (no args) to see
 | `shoprenter-get-category-customer-group-relations` | `page?, limit?, full?, categoryId?, customerGroupId?` |
 | `shoprenter-get-category-customer-group-relation`  | `id`                                                  |
 
-### Orders (`mcp.order.order:read`)
+### Orders
 
 | Tool                                              | Params                                                        |
 | ------------------------------------------------- | ------------------------------------------------------------- |
@@ -171,7 +127,7 @@ To discover params for any tool, run `n shoprenter <tool-name>` (no args) to see
 | `shoprenter-get-order-product-addon`              | `id`                                                          |
 | `shoprenter-get-order-product-addons-by-order`    | `orderId`                                                     |
 
-### Customers (`mcp.customer.customer:read`)
+### Customers
 
 | Tool                                     | Params                                                   |
 | ---------------------------------------- | -------------------------------------------------------- |
@@ -182,7 +138,7 @@ To discover params for any tool, run `n shoprenter <tool-name>` (no args) to see
 | `shoprenter-get-customer-addresses`      | `customerId`                                             |
 | `shoprenter-get-customer-loyalty-points` | `customerId`                                             |
 
-### Customer groups (`mcp.customer.customerGroup:read`)
+### Customer groups
 
 | Tool                                           | Params                                               |
 | ---------------------------------------------- | ---------------------------------------------------- |
@@ -195,27 +151,27 @@ To discover params for any tool, run `n shoprenter <tool-name>` (no args) to see
 
 ### Localization
 
-| Tool                            | Scope                              | Params                 |
-| ------------------------------- | ---------------------------------- | ---------------------- |
-| `shoprenter-get-geozones`       | `mcp.localization.location:read`   | `page?, limit?, full?` |
-| `shoprenter-get-geozone`        | `mcp.localization.location:read`   | `id`                   |
-| `shoprenter-get-languages`      | `mcp.localization.language:read`   | `page?, limit?, full?` |
-| `shoprenter-get-language`       | `mcp.localization.language:read`   | `id`                   |
-| `shoprenter-get-weight-classes` | `mcp.localization.weightUnit:read` | `page?, limit?, full?` |
-| `shoprenter-get-weight-class`   | `mcp.localization.weightUnit:read` | `id`                   |
-| `shoprenter-get-length-classes` | `mcp.localization.lengthUnit:read` | `page?, limit?, full?` |
-| `shoprenter-get-length-class`   | `mcp.localization.lengthUnit:read` | `id`                   |
-| `shoprenter-get-tax-classes`    | `mcp.taxClass.taxClass:read`       | `page?, limit?, full?` |
-| `shoprenter-get-tax-class`      | `mcp.taxClass.taxClass:read`       | `id`                   |
+| Tool                            | Params                 |
+| ------------------------------- | ---------------------- |
+| `shoprenter-get-geozones`       | `page?, limit?, full?` |
+| `shoprenter-get-geozone`        | `id`                   |
+| `shoprenter-get-languages`      | `page?, limit?, full?` |
+| `shoprenter-get-language`       | `id`                   |
+| `shoprenter-get-weight-classes` | `page?, limit?, full?` |
+| `shoprenter-get-weight-class`   | `id`                   |
+| `shoprenter-get-length-classes` | `page?, limit?, full?` |
+| `shoprenter-get-length-class`   | `id`                   |
+| `shoprenter-get-tax-classes`    | `page?, limit?, full?` |
+| `shoprenter-get-tax-class`      | `id`                   |
 
-### Stock statuses (`mcp.product.stockStatus:read`)
+### Stock statuses
 
 | Tool                            | Params                 |
 | ------------------------------- | ---------------------- |
 | `shoprenter-get-stock-statuses` | `page?, limit?, full?` |
 | `shoprenter-get-stock-status`   | `id`                   |
 
-### Coupons (`mcp.marketing.coupon:read`, `mcp.marketing.coupon:write`)
+### Coupons
 
 | Tool                                         | Params                                                                       |
 | -------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -233,7 +189,7 @@ To discover params for any tool, run `n shoprenter <tool-name>` (no args) to see
 | `shoprenter-create-coupon-category-relation` | `couponId, categoryId`                                                       |
 | `shoprenter-delete-coupon-category-relation` | `id`                                                                         |
 
-### CMS content (`mcp.cms.content:read`, `mcp.cms.content:write`)
+### CMS content
 
 | Tool                                          | Params                                                        |
 | --------------------------------------------- | ------------------------------------------------------------- |
