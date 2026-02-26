@@ -55,9 +55,15 @@ All operations support `--json` for raw JSON output. Default output is a colored
 | `products`               | `/products`              | inner ID, SKU, price, stock, status |
 | `categories`             | `/categories`            | inner ID, name, status              |
 | `orders`                 | `/orders`                | inner ID, date, status ref          |
+| `order-products`         | `/orderProducts`         | inner ID, name, SKU, qty, price     |
+| `order-totals`           | `/orderTotals`           | type, name, value                   |
+| `order-histories`        | `/orderHistories`        | inner ID, date, status ref, comment |
 | `customers`              | `/customers`             | inner ID, email, name               |
-| `coupons`                | `/coupons`               | inner ID, code, discount            |
+| `coupons`                | `/coupons`               | inner ID, code, discount, status    |
+| `coupon-descriptions`    | `/couponDescriptions`    | inner ID, name, description         |
 | `newsletter-subscribers` | `/newsletterSubscribers` | inner ID, email, name               |
+
+Note: `order-histories` is read-only (list + get only).
 
 ### Shop Config
 
@@ -98,6 +104,40 @@ Script tags (`script-tags`, alias `scripts`) have additional fields for creation
 n shoprenter script-tags create --body '{"src":"https://cdn.example.com/widget.js","displayScope":"FRONTEND","displayArea":"HEADER"}'
 ```
 
+### Coupons
+
+**IMPORTANT:** When creating a coupon, you MUST also create a couponDescription via POST /couponDescriptions with name, description, coupon.id, and language.id. Without a couponDescription, the coupon will not appear in the Shoprenter admin UI.
+
+Coupon fields (from https://doc.shoprenter.hu/api/coupon.html):
+
+| Field                             | Description                                       | Required | Readonly |
+| --------------------------------- | ------------------------------------------------- | -------- | -------- |
+| `code`                            | Coupon code                                       | x        |          |
+| `discountType`                    | `PERCENT` or `FIXED`                              |          |          |
+| `percentDiscountValue`            | Percentage discount (when `discountType=PERCENT`) |          |          |
+| `fixDiscountValue`                | Fixed discount (when `discountType=FIXED`)        |          |          |
+| `status`                          | `0`=disabled, `1`=enabled                         |          |          |
+| `loginRequired`                   | Customer must be logged in to use                 |          |          |
+| `freeShipping`                    | Gives free shipping                               |          |          |
+| `dateStart`, `dateEnd`            | Validity period                                   |          |          |
+| `totalNumberOfCoupons`            | Total usage limit                                 |          |          |
+| `totalNumberOfCouponsPerCustomer` | Per-customer usage limit                          |          |          |
+| `email`                           | Restrict to specific email                        |          |          |
+| `minOrderLimit`, `maxOrderLimit`  | Order value range                                 |          |          |
+| `targetType`                      | `PRODUCT` or `CATEGORY`                           |          |          |
+| `validToSpecialProducts`          | Combine with other discounts                      |          |          |
+| `validWithGiftProducts`           | Use on gift promo items                           |          |          |
+| `validWithBulkDiscount`           | Works with bulk discounts                         |          |          |
+| `validWithLoyaltyPoints`          | Use alongside loyalty points                      |          |          |
+| `bypassMinOrderLimitWithCoupon`   | Allow orders below min after coupon               |          |          |
+| `taxClass`                        | Tax class resource link                           |          |          |
+| `couponDescriptions`              | Link to multilingual descriptions                 |          |          |
+| `dateCreated`, `dateUpdated`      | Timestamps                                        |          | x        |
+
+Coupon description fields (`/couponDescriptions`): `name` (required), `description` (required), `coupon` (link, required, readonly), `language` (link, required, readonly). Filter by `couponId`, `languageId`, `code`.
+
+Related: `/couponCategoryRelations`, `/couponProductRelations`.
+
 ## Advanced commands
 
 ### `resource` — generic CRUD
@@ -131,8 +171,14 @@ n shoprenter request /orderExtend/abc123 --method GET
 
 ## Resource name aliases
 
-The `resource` command resolves these names to API endpoints:
+The `resource` command resolves these names to API endpoints. All support hyphenated and camelCase forms.
 
-products, categories, customers, orders, coupons, productExtend, categoryExtend, orderExtend, customerExtend, shippingModeExtend, newsletterSubscribers, scriptTags, orderStatuses, orderStatusDescriptions, paymentModes, shippingModes, urlAliases, languages, currencies, domains, settings, productImages, productDescriptions, categoryDescriptions, manufacturers, webHooks.
-
-Hyphenated forms like `product-extend`, `script-tags`, `url-aliases` also work.
+- **Core:** products, categories, customers, orders, coupons, couponDescriptions, couponCategoryRelations, couponProductRelations, newsletterSubscribers
+- **Orders:** orderProducts, orderTotals, orderHistories, orderInvoices, orderProductOptions, orderProductAddons, orderCreditCards
+- **Products:** productImages, productDescriptions, productSpecials, productOptions, productOptionValues, productOptionValueDescriptions, productTags, productBadges, productBadgeDescriptions, productCategoryRelations, productRelatedProductRelations, productCollateralProductRelations, productAddons, productAddonProductRelations, productClasses, productClassAttributeRelations, productDocumentRelations, productListAttributeValueRelations, productProductBadgeRelations
+- **Config:** scriptTags, orderStatuses, orderStatusDescriptions, paymentModes, shippingModes, shippingLanes, shippingModeDescriptions
+- **Extend:** productExtend, categoryExtend, orderExtend, customerExtend, shippingModeExtend, taxClassExtend
+- **Attributes:** listAttributes, listAttributeValues, listAttributeValueDescriptions, listAttributeWidgets, numberAttributes, numberAttributeValues, numberAttributeWidgets, numberAttributeWidgetLimits, textAttributes, textAttributeValues, textAttributeValueDescriptions, attributeDescriptions, attributeWidgetDescriptions, attributeWidgetCategoryRelations
+- **Geo:** addresses, countries, zones, geoZones
+- **CMS:** cmsContentCmsListRelations, cmsContentDescriptions, cmsContentExtend, cmsContentListDescriptions, cmsContentListExtend, informationDescriptions, informationExtends
+- **Other:** manufacturers, manufacturerDescriptions, taxClasses, taxRates, stockStatuses, stockStatusDescriptions, customerGroups, customerGroupProductPrices, categoryCustomerGroupRelations, loyaltyPoints, loyaltyPointsUsed, documents, documentDescriptions, files, urlAliases, languages, currencies, domains, settings, webHooks, priceMultipliers, weightClasses, weightClassDescriptions, lengthClasses, lengthClassDescriptions, reloadOrderUrls

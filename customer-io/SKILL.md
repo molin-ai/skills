@@ -1,5 +1,5 @@
 ---
-name: customerio
+name: customer-io
 description: Customer.io App API for managing newsletters, broadcasts, campaigns, and transactional emails. Use when working with Customer.io email templates, sending test emails, updating newsletter content, or managing email campaigns via CLI/API.
 ---
 
@@ -30,12 +30,14 @@ n vault set CUSTOMERIO_API_KEY <key>
 ```
 
 **Base URLs:**
+
 - US: `https://api.customer.io/v1/`
 - EU: `https://api-eu.customer.io/v1/`
 
 > ⚠️ If you get `{"errors":[{"detail":"wrong datacenter","status":"301"}]}`, switch to the other base URL.
 
 **Headers:**
+
 ```
 Authorization: Bearer $CUSTOMERIO_API_KEY
 Content-Type: application/json
@@ -343,44 +345,77 @@ Standard Molin newsletter HTML structure (550px wide, Helvetica Neue font):
 ```
 
 **CTA Button HTML (correct style):**
+
 ```html
-<table class="button_block" width="100%" border="0" cellpadding="10" cellspacing="0" role="presentation" style="mso-table-lspace:0;mso-table-rspace:0">
-<tr><td class="pad"><div class="alignment" align="center"><!--[if mso]>
+<table
+  class="button_block"
+  width="100%"
+  border="0"
+  cellpadding="10"
+  cellspacing="0"
+  role="presentation"
+  style="mso-table-lspace:0;mso-table-rspace:0"
+>
+  <tr>
+    <td class="pad">
+      <div class="alignment" align="center">
+        <!--[if mso]>
 <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://molin.ai/app/" style="height:38px;width:220px;v-text-anchor:middle;" arcsize="37%" stroke="false" fillcolor="#601feb">
 <w:anchorlock/>
 <v:textbox inset="0px,0px,0px,0px">
 <center dir="false" style="color:#ffffff;font-family:Arial, sans-serif;font-size:14px">
 <![endif]-->
-<a class="button" href="https://molin.ai/app/" target="_blank" style="background-color:#601feb;border-bottom:0px solid transparent;border-left:0px solid transparent;border-radius:14px;border-right:0px solid transparent;border-top:0px solid transparent;color:#ffffff;display:inline-block;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:700;mso-border-alt:none;padding-bottom:5px;padding-top:5px;text-align:center;text-decoration:none;width:auto;word-break:keep-all;"><span style="word-break: break-word; padding-left: 30px; padding-right: 30px; font-size: 14px; display: inline-block; letter-spacing: normal;"><span style="word-break: break-word; line-height: 28px;">Button Text</span></span></a>
-<!--[if mso]></center></v:textbox></v:roundrect><![endif]--></div></td></tr></table>
+        <a
+          class="button"
+          href="https://molin.ai/app/"
+          target="_blank"
+          style="background-color:#601feb;border-bottom:0px solid transparent;border-left:0px solid transparent;border-radius:14px;border-right:0px solid transparent;border-top:0px solid transparent;color:#ffffff;display:inline-block;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:700;mso-border-alt:none;padding-bottom:5px;padding-top:5px;text-align:center;text-decoration:none;width:auto;word-break:keep-all;"
+          ><span
+            style="word-break: break-word; padding-left: 30px; padding-right: 30px; font-size: 14px; display: inline-block; letter-spacing: normal;"
+            ><span style="word-break: break-word; line-height: 28px;"
+              >Button Text</span
+            ></span
+          ></a
+        >
+        <!--[if mso]></center></v:textbox></v:roundrect><![endif]-->
+      </div>
+    </td>
+  </tr>
+</table>
 ```
 
 **Molin Social Links (correct URLs):**
+
 - Facebook: `https://www.facebook.com/groups/molinaiofficialen`
 - X/Twitter: `https://x.com/molin_ai`
 - Instagram: `https://www.instagram.com/molin_app/`
 - LinkedIn: `https://www.linkedin.com/company/molin-ai/`
 
 **Social Icon Images (getbee.io):**
+
 - `https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/facebook@2x.png`
 - `https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/twitter@2x.png`
 - `https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/instagram@2x.png`
 - `https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/linkedin@2x.png`
 
 **Molin Logo:**
+
 - `https://files.customer.io/6bbb63a54e6f5691/molin-logo.png` (180px wide)
 
 **Hungarian footer:**
+
 ```
 Ezt az e-mailt a {{customer.email}} címre küldtük. Ha nem szeretnél több ilyen levelet kapni, leiratkozhatsz itt.
 ```
 
 **English footer:**
+
 ```
 The email was sent to {{customer.email}}. To no longer receive these emails, unsubscribe here.
 ```
 
 **Liquid personalization:**
+
 - Hungarian greeting: `Szia {% if customer.first_name %}{{customer.first_name}}!{% else %}!{% endif %}`
 - English greeting: `Hey {% if customer.first_name %}{{customer.first_name}},{% else %},{% endif %}`
 
@@ -388,15 +423,15 @@ The email was sent to {{customer.email}}. To no longer receive these emails, uns
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| `wrong datacenter` | Switch between `api.customer.io` and `api-eu.customer.io` |
-| 401 Unauthorized | Check API key is valid App API key (not Track API key) |
-| 404 Not Found | Verify newsletter/content IDs exist |
-| 422 Unprocessable | Check body is valid HTML; ensure template is not drag-and-drop |
+| Issue                         | Solution                                                                                        |
+| ----------------------------- | ----------------------------------------------------------------------------------------------- |
+| `wrong datacenter`            | Switch between `api.customer.io` and `api-eu.customer.io`                                       |
+| 401 Unauthorized              | Check API key is valid App API key (not Track API key)                                          |
+| 404 Not Found                 | Verify newsletter/content IDs exist                                                             |
+| 422 Unprocessable             | Check body is valid HTML; ensure template is not drag-and-drop                                  |
 | URLs show `[redacted]` in GET | Normal API behavior — stored values are intact. Use known-good URLs when building new templates |
-| Images broken in email | Use absolute URLs; check image hosting is publicly accessible |
-| Button too large | Use `height:38px`, `font-size:14px`, `arcsize:37%`, `border-radius:14px` |
+| Images broken in email        | Use absolute URLs; check image hosting is publicly accessible                                   |
+| Button too large              | Use `height:38px`, `font-size:14px`, `arcsize:37%`, `border-radius:14px`                        |
 
 ---
 
