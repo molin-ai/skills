@@ -138,6 +138,41 @@ Coupon description fields (`/couponDescriptions`): `name` (required), `descripti
 
 Related: `/couponCategoryRelations`, `/couponProductRelations`.
 
+## Popup via Script Tag
+
+To create a frontend popup on Shoprenter (no external hosting required):
+
+1. Write the popup as a self-executing JS function: `(function(){ ... })()`
+2. Use `document.createElement` and **inline styles only** — CSS stylesheet injection breaks in `data:` URI scripts
+3. Use **double quotes only** in all JS strings — single quotes break after URL-encoding in `data:` URIs
+4. Use `insertAdjacentHTML("beforeend", ...)` for HTML content blocks
+5. Wrap in `setTimeout(fn, ms)` for delayed popups, or run immediately
+6. URL-encode the JS and deploy via:
+   ```sh
+   n shoprenter script-tags create --body-file payload.json
+   ```
+   where `payload.json` is:
+   ```json
+   {
+     "src": "data:text/javascript,<url-encoded-js>",
+     "displayScope": "FRONTEND",
+     "displayArea": "BODY",
+     "event": "ONLOAD"
+   }
+   ```
+7. Use `sessionStorage` to control show frequency (once per session, etc.)
+
+### Newsletter subscribe (optional)
+
+To save emails as newsletter subscribers in Shoprenter, POST to the shop's frontend endpoint:
+
+```
+POST /index.php?route=module/newsletter_subscribe/subscribe
+Content-Type: application/x-www-form-urlencoded
+
+subscriber_email=<email>&subscriber_policy=1
+```
+
 ## Advanced commands
 
 ### `resource` — generic CRUD
