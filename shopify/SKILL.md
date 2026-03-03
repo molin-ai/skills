@@ -1,6 +1,6 @@
 ---
 name: shopify
-description: Shopify CLI for apps, themes, Hydrogen storefronts. Use for shopify commands and development workflows.
+description: Shopify CLI for apps, themes, Hydrogen storefronts, and Ninja Shopify auth/GraphQL workflows.
 ---
 
 # Shopify CLI Reference
@@ -26,7 +26,64 @@ shopify version                 # Check version
 ```
 
 **Install:** `npm install -g @shopify/cli@latest` or `npx shopify`
+**Install:** `npm install -g @shopify/cli@latest` or `npx shopify`
 **Requires:** Node.js 20.10+, Git 2.28.0+
+
+---
+
+## Authentication (`n shopify auth`)
+
+Authenticate with Shopify Identity using the `n` CLI. First-time setup requires `login` which returns a URL — show this URL to the user so they can authenticate in their browser. Once they confirm they have logged in, run `exchange` to complete the token swap.
+
+### Commands
+
+```bash
+n shopify auth login       # get verification URL and user code (show URL to user)
+n shopify auth exchange    # after user has logged in, exchange device code for token
+n shopify auth refresh     # refresh expired access token using stored refresh token
+n shopify auth status      # check current auth status (scopes, expiry)
+n shopify auth logout      # clear stored credentials
+n shopify auth backup      # back up credentials to Ninja vault
+n shopify auth restore     # restore credentials from Ninja vault
+```
+
+### First-time flow
+
+1. Run `n shopify auth login` — outputs a verification URL and user code.
+2. Show the URL to the user and ask them to open it and authenticate.
+3. Once the user confirms they have logged in, run `n shopify auth exchange` to store the token.
+4. Run `n shopify auth backup` to back up credentials to the Ninja vault.
+
+### Token refresh
+
+If the access token expires, run `n shopify auth refresh` to get a new one using the stored refresh token. If the refresh token itself is expired or revoked (e.g. the official Shopify CLI rotated it), re-run `n shopify auth login` + `n shopify auth exchange`.
+
+### Backup & restore
+
+Back up credentials to the Ninja vault so they can be restored on any machine:
+
+```bash
+n shopify auth backup      # stores tokens under vault key SHOPIFY_AUTH_JSON
+n shopify auth restore     # retrieves and writes tokens back to local storage
+```
+
+---
+
+## GraphQL Admin API (`n shopify graphql`)
+
+Send GraphQL queries to a Shopify store's Admin API using tokens from the official Shopify CLI's session store.
+
+```bash
+n shopify graphql <store> '<query>'
+n shopify graphql my-store.myshopify.com '{ shop { name } }'
+n shopify graphql my-store.myshopify.com '{ products(first: 3) { edges { node { title } } } }'
+n shopify graphql my-store.myshopify.com 'query($id: ID!) { product(id: $id) { title } }' --variables '{"id":"gid://shopify/Product/123"}'
+```
+
+**Options:**
+
+- `--variables` — JSON-encoded variables for the query
+- `--api-version` — Shopify Admin API version (default: `2025-01`)
 
 ---
 
