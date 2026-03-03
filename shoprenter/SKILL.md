@@ -1,251 +1,219 @@
 ---
 name: shoprenter
-description: Shoprenter CLI integration via `n shoprenter` commands. Use when working with the Shoprenter e-commerce platform, running `n shoprenter` commands, setting up Shoprenter authentication, exchanging SSO tokens for access tokens, refreshing expired tokens, or modifying Shoprenter CLI subcommands. Also use when the user mentions Shoprenter shop management, product/order/customer queries via the n-cli, or needs to connect to a Shoprenter store.
+description: Shoprenter CLI integration via `n shoprenter` commands. Use when working with the Shoprenter e-commerce platform, running `n shoprenter` commands, setting up Shoprenter authentication. Also use when the user mentions Shoprenter shop management, product/order/customer queries via the n-cli, or needs to connect to a Shoprenter store.
 ---
 
 # Shoprenter CLI
 
-CLI for interacting with Shoprenter stores via MCP (JSON-RPC 2.0 over HTTP).
+Use `n shoprenter` (alias: `n sr`) to manage Shoprenter stores via the REST API.
 
-## Authentication
+The `shopname` is the subdomain, e.g. `molinai` from `molinai.myshoprenter.hu`.
 
-The CLI requires `SHOPRENTER_ACCESS_TOKEN` and `SHOPRENTER_SHOP_NAME` env vars. First look for these credentials in your secrets manager. If not found, ask the user for **shop name** and **SSO token** before proceeding.
+Official Shoprenter API docs: https://doc.shoprenter.hu/api/
 
-### Obtaining the SSO token
+Run any command with `--help` to discover its parameters and usage.
 
-The SSO token can be found on any Shoprenter admin page in the DOM:
-
-```js
-document.ShopRenter.userData.ssoToken
-```
-
-Ask the user to open their Shoprenter admin panel, open the browser console, and run the above to get the token.
-
-### Obtaining an access token from an SSO token
-
-Exchange an SSO token for an OAuth2 access token using the Token Exchange grant (RFC 8693). The `SHOPRENTER_CLIENT_ID` and `SHOPRENTER_CLIENT_SECRET` are available as global env vars.
+## Auth
 
 ```sh
-curl -s -X POST "https://oauth.app.shoprenter.net/{shopName}/admin/token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "grant_type": "token_exchange",
-    "subject_token_type": "sso_token",
-    "subject_token": "{ssoToken}",
-    "client_id": "'"$SHOPRENTER_MCP_CLIENT_ID"'",
-    "client_secret": "'"$SHOPRENTER_MCP_CLIENT_SECRET"'"
-  }'
+n shoprenter auth login # auto-detect shops linked to your Molin account
+n shoprenter auth login molinai # log in to a specific shop
+n shoprenter auth login molinai --username abc --password def # manual credentials
+n shoprenter auth status # show active shop, credentials, and linked shops
+n shoprenter auth logout # delete local credential cache
+n shoprenter whoami # active shop and username
 ```
 
-Response (access token valid 1 hour, refresh token valid 30 days):
+### Env var override (scripts/CI)
 
-```json
-{
-  "access_token": "eyJ...",
-  "token_type": "Bearer",
-  "expires_in": 3600,
-  "refresh_token": "eyJ..."
-}
-```
-
-### Refreshing an expired access token
-
-When an access token expires (after 1 hour), exchange the refresh token for a new access token:
+Skip the login flow by setting env vars directly:
 
 ```sh
-curl -s -X POST "https://oauth.app.shoprenter.net/{shopName}/admin/token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "grant_type": "refresh_token",
-    "client_id": "'"$SHOPRENTER_MCP_CLIENT_ID"'",
-    "client_secret": "'"$SHOPRENTER_MCP_CLIENT_SECRET"'",
-    "refresh_token": "{refreshToken}"
-  }'
+export SHOPRENTER_USERNAME="user"
+export SHOPRENTER_PASSWORD="pass"
+export SHOPRENTER_SHOPNAME="myshopname"
 ```
 
-The refresh token is valid for 30 days.
+## Resource commands
 
-## Usage
+All resource commands are subcommand groups with these operations (unless restricted):
 
-Set env vars and run commands directly:
+| Operation | Alias | Description                                             |
+| --------- | ----- | ------------------------------------------------------- |
+| `list`    | `ls`  | Paginated list with `--limit` (default 25) and `--page` |
+| `get`     |       | Fetch single item by numeric inner ID or base64 ID      |
+| `create`  |       | Create via `--body` (inline JSON) or `--body-file` path |
+| `update`  |       | Partial update via `--body` or `--body-file`            |
+| `delete`  | `rm`  | Delete by numeric inner ID or base64 ID                 |
+
+All operations support `--json` for raw JSON output. Default output is a colored summary.
+
+### Shop Data (full CRUD)
+
+| Command                  | API endpoint             | Pretty output                       |
+| ------------------------ | ------------------------ | ----------------------------------- |
+| `products`               | `/products`              | inner ID, SKU, price, stock, status |
+| `categories`             | `/categories`            | inner ID, name, status              |
+| `orders`                 | `/orders`                | inner ID, date, status ref          |
+| `order-products`         | `/orderProducts`         | inner ID, name, SKU, qty, price     |
+| `order-totals`           | `/orderTotals`           | type, name, value                   |
+| `order-histories`        | `/orderHistories`        | inner ID, date, status ref, comment |
+| `customers`              | `/customers`             | inner ID, email, name               |
+| `coupons`                | `/coupons`               | inner ID, code, discount, status    |
+| `coupon-descriptions`    | `/couponDescriptions`    | inner ID, name, description         |
+| `newsletter-subscribers` | `/newsletterSubscribers` | inner ID, email, name               |
+
+Note: `order-histories` is read-only (list + get only).
+
+### Shop Config
+
+| Command                   | API endpoint               | Operations | Pretty output                |
+| ------------------------- | -------------------------- | ---------- | ---------------------------- |
+| `script-tags` (`scripts`) | `/scriptTags`              | full CRUD  | ID, scope, area, src/content |
+| `order-statuses`          | `/orderStatusDescriptions` | list only  | name, color                  |
+| `payment-modes`           | `/paymentModes`            | list only  | inner ID, name               |
+| `shipping-modes`          | `/shippingModeExtend`      | list only  | inner ID, name               |
+
+### Common options
 
 ```sh
-export SHOPRENTER_ACCESS_TOKEN="eyJ..."
-export SHOPRENTER_SHOP_NAME="myshopname"
-
-n shoprenter list                                            # list all available tools
-n shoprenter list --withDescriptions                         # list with descriptions
-n shoprenter shoprenter-test-connection                      # show tool schema
-n shoprenter shoprenter-test-connection '{}'                 # call tool (no params)
-n shoprenter shoprenter-get-products '{"limit":5}'           # call tool with inline JSON
-echo '{"limit":5}' | n shoprenter shoprenter-get-products -  # call tool with stdin JSON
-n shoprenter shoprenter-get-products '{"limit":5}' --json    # output full JSON-RPC result
-n shoprenter shoprenter-get-products '{"limit":5}' --raw     # output raw text content only
+n shoprenter products list --limit 50 --page 2     # pagination
+n shoprenter products list --query published=1      # extra query params (repeatable)
+n shoprenter products list --json                   # raw JSON output
+n shoprenter products get 559                         # fetch by numeric inner ID
+n shoprenter products get cHJvZHVjdC1wcm9kdWN0X2lkPTU1OQ==  # or by base64 ID
+n shoprenter products create --body '{"status":"1","price":"19.99"}'
+n shoprenter products create --body-file payload.json
+n shoprenter products update 559 --body '{"price":"29.99"}'
+n shoprenter products delete 559
 ```
 
-Tools are called by their full MCP name (e.g. `shoprenter-get-products`).
+### Script tags
 
-### Options
+Script tags (`script-tags`, alias `scripts`) have additional fields for creation/update:
 
-| Option               | Description                       |
-| -------------------- | --------------------------------- |
-| `--withDescriptions` | include tool descriptions in list |
-| `--json`             | output as JSON (for scripting)    |
-| `--raw`              | output raw text content           |
+| Field          | Description                                  |
+| -------------- | -------------------------------------------- |
+| `src`          | External script URL                          |
+| `content`      | Inline script content (alternative to `src`) |
+| `event`        | Trigger event (default: `ONLOAD`)            |
+| `displayScope` | `FRONTEND`, `THANK_YOU_PAGE`, or `ALL`       |
+| `displayArea`  | `HEADER` or `BODY`                           |
 
-### Behaviour
+```sh
+n shoprenter script-tags create --body '{"src":"https://cdn.example.com/widget.js","displayScope":"FRONTEND","displayArea":"HEADER"}'
+```
 
-- `n shoprenter` or `n shoprenter list` lists all tools
-- `n shoprenter <tool>` shows tool schema (name, description, input schema)
-- `n shoprenter <tool> '<json>'` calls the tool with inline JSON args
-- `n shoprenter <tool> -` reads JSON args from stdin
+### Coupons
 
-## Available tools
+**IMPORTANT:** When creating a coupon, you MUST also create a couponDescription via POST /couponDescriptions with name, description, coupon.id, and language.id. Without a couponDescription, the coupon will not appear in the Shoprenter admin UI.
 
-To discover params for any tool, run `n shoprenter <tool-name>` (no args) to see the input schema.
+Coupon fields (from https://doc.shoprenter.hu/api/coupon.html):
 
-### Products (`mcp.product.product:read`, `mcp.product.product:write`)
+| Field                             | Description                                       | Required | Readonly |
+| --------------------------------- | ------------------------------------------------- | -------- | -------- |
+| `code`                            | Coupon code                                       | x        |          |
+| `discountType`                    | `PERCENT` or `FIXED`                              |          |          |
+| `percentDiscountValue`            | Percentage discount (when `discountType=PERCENT`) |          |          |
+| `fixDiscountValue`                | Fixed discount (when `discountType=FIXED`)        |          |          |
+| `status`                          | `0`=disabled, `1`=enabled                         |          |          |
+| `loginRequired`                   | Customer must be logged in to use                 |          |          |
+| `freeShipping`                    | Gives free shipping                               |          |          |
+| `dateStart`, `dateEnd`            | Validity period                                   |          |          |
+| `totalNumberOfCoupons`            | Total usage limit                                 |          |          |
+| `totalNumberOfCouponsPerCustomer` | Per-customer usage limit                          |          |          |
+| `email`                           | Restrict to specific email                        |          |          |
+| `minOrderLimit`, `maxOrderLimit`  | Order value range                                 |          |          |
+| `targetType`                      | `PRODUCT` or `CATEGORY`                           |          |          |
+| `validToSpecialProducts`          | Combine with other discounts                      |          |          |
+| `validWithGiftProducts`           | Use on gift promo items                           |          |          |
+| `validWithBulkDiscount`           | Works with bulk discounts                         |          |          |
+| `validWithLoyaltyPoints`          | Use alongside loyalty points                      |          |          |
+| `bypassMinOrderLimitWithCoupon`   | Allow orders below min after coupon               |          |          |
+| `taxClass`                        | Tax class resource link                           |          |          |
+| `couponDescriptions`              | Link to multilingual descriptions                 |          |          |
+| `dateCreated`, `dateUpdated`      | Timestamps                                        |          | x        |
 
-| Tool                                            | Params                                                    |
-| ----------------------------------------------- | --------------------------------------------------------- |
-| `shoprenter-get-products`                       | `page?, limit?, full?, innerId?, sku?`                    |
-| `shoprenter-get-product`                        | `id`                                                      |
-| `shoprenter-search-products`                    | `keyword, page?, limit?`                                  |
-| `shoprenter-update-product-seo`                 | `productId, languageId, name?, metaTitle?, metaKeywords?` |
-| `shoprenter-get-product-specials`               | `page?, limit?, productId?, full?`                        |
-| `shoprenter-get-product-special`                | `id, full?`                                               |
-| `shoprenter-create-product-special`             | `priority, price, dateFrom, dateTo, productId`            |
-| `shoprenter-update-product-special`             | `id, priority?, price?, dateFrom?, dateTo?`               |
-| `shoprenter-delete-product-special`             | `id`                                                      |
-| `shoprenter-get-product-stocks`                 | `productId?, sku?`                                        |
-| `shoprenter-update-product-stocks`              | `productId?, sku?, stock1?, stock2?, stock3?`             |
-| `shoprenter-get-product-physical-attributes`    | `productId?, sku?`                                        |
-| `shoprenter-update-product-physical-attributes` | `productId?, sku?, weight?, width?, height?`              |
-| `shoprenter-get-product-catalog-info`           | `productId?, sku?`                                        |
-| `shoprenter-update-product-catalog-info`        | `productId?, sku?, modelNumber?, status?, orderable?`     |
-| `shoprenter-get-product-category-relations`     | `page?, limit?, full?, productId?, categoryId?`           |
-| `shoprenter-get-product-category-relation`      | `id`                                                      |
-| `shoprenter-get-product-attributes`             | `productId?`                                              |
+Coupon description fields (`/couponDescriptions`): `name` (required), `description` (required), `coupon` (link, required, readonly), `language` (link, required, readonly). Filter by `couponId`, `languageId`, `code`.
 
-### Product addons (`mcp.product.addon:read`)
+Related: `/couponCategoryRelations`, `/couponProductRelations`.
 
-| Tool                            | Params                 |
-| ------------------------------- | ---------------------- |
-| `shoprenter-get-product-addons` | `page?, limit?, full?` |
-| `shoprenter-get-product-addon`  | `id`                   |
+## Popup via Script Tag
 
-### Categories (`mcp.product.category:read`)
+To create a frontend popup on Shoprenter (no external hosting required):
 
-| Tool                                               | Params                                                |
-| -------------------------------------------------- | ----------------------------------------------------- |
-| `shoprenter-get-categories`                        | `page?, limit?, full?, innerId?`                      |
-| `shoprenter-get-category`                          | `id`                                                  |
-| `shoprenter-get-category-tree`                     | _(none)_                                              |
-| `shoprenter-get-category-descriptions`             | `page?, limit?, full?, categoryId?`                   |
-| `shoprenter-get-category-customer-group-relations` | `page?, limit?, full?, categoryId?, customerGroupId?` |
-| `shoprenter-get-category-customer-group-relation`  | `id`                                                  |
+1. Write the popup as a self-executing JS function: `(function(){ ... })()`
+2. Use `document.createElement` and **inline styles only** — CSS stylesheet injection breaks in `data:` URI scripts
+3. Use **double quotes only** in all JS strings — single quotes break after URL-encoding in `data:` URIs
+4. Use `insertAdjacentHTML("beforeend", ...)` for HTML content blocks
+5. Wrap in `setTimeout(fn, ms)` for delayed popups, or run immediately
+6. URL-encode the JS and deploy via:
+   ```sh
+   n shoprenter script-tags create --body-file payload.json
+   ```
+   where `payload.json` is:
+   ```json
+   {
+     "src": "data:text/javascript,<url-encoded-js>",
+     "displayScope": "FRONTEND",
+     "displayArea": "BODY",
+     "event": "ONLOAD"
+   }
+   ```
+7. Use `sessionStorage` to control show frequency (once per session, etc.)
 
-### Orders (`mcp.order.order:read`)
+### Newsletter subscribe (optional)
 
-| Tool                                              | Params                                                        |
-| ------------------------------------------------- | ------------------------------------------------------------- |
-| `shoprenter-get-orders`                           | `page?, limit?, emailFilter?, statusFilter?, dateFromFilter?` |
-| `shoprenter-get-order`                            | `id`                                                          |
-| `shoprenter-get-order-statistics`                 | `dateFrom?, dateTo?`                                          |
-| `shoprenter-get-order-summary`                    | `orderId`                                                     |
-| `shoprenter-get-order-products`                   | `page?, limit?, full?, orderId?`                              |
-| `shoprenter-get-order-product`                    | `id`                                                          |
-| `shoprenter-get-order-totals`                     | `page?, limit?, full?, orderId?`                              |
-| `shoprenter-get-order-total`                      | `id`                                                          |
-| `shoprenter-get-order-statuses`                   | `page?, limit?, full?`                                        |
-| `shoprenter-get-order-status`                     | `id`                                                          |
-| `shoprenter-get-order-status-descriptions`        | `page?, limit?, full?, orderStatusId?`                        |
-| `shoprenter-get-order-status-description`         | `id`                                                          |
-| `shoprenter-get-order-invoices`                   | `page?, limit?, full?`                                        |
-| `shoprenter-get-order-invoice`                    | `id`                                                          |
-| `shoprenter-get-order-invoices-by-order`          | `orderId`                                                     |
-| `shoprenter-get-order-product-options`            | `page?, limit?, full?`                                        |
-| `shoprenter-get-order-product-option`             | `id`                                                          |
-| `shoprenter-get-order-product-options-by-product` | `orderProductId`                                              |
-| `shoprenter-get-order-product-addons`             | `page?, limit?, full?`                                        |
-| `shoprenter-get-order-product-addon`              | `id`                                                          |
-| `shoprenter-get-order-product-addons-by-order`    | `orderId`                                                     |
+To save emails as newsletter subscribers in Shoprenter, POST to the shop's frontend endpoint:
 
-### Customers (`mcp.customer.customer:read`)
+```
+POST /index.php?route=module/newsletter_subscribe/subscribe
+Content-Type: application/x-www-form-urlencoded
 
-| Tool                                     | Params                                                   |
-| ---------------------------------------- | -------------------------------------------------------- |
-| `shoprenter-get-customers`               | `page?, limit?, emailFilter?, nameFilter?, phoneFilter?` |
-| `shoprenter-get-customer`                | `id`                                                     |
-| `shoprenter-search-customers`            | `keyword, page?, limit?`                                 |
-| `shoprenter-get-customer-statistics`     | _(none)_                                                 |
-| `shoprenter-get-customer-addresses`      | `customerId`                                             |
-| `shoprenter-get-customer-loyalty-points` | `customerId`                                             |
+subscriber_email=<email>&subscriber_policy=1
+```
 
-### Customer groups (`mcp.customer.customerGroup:read`)
+## Advanced commands
 
-| Tool                                           | Params                                               |
-| ---------------------------------------------- | ---------------------------------------------------- |
-| `shoprenter-get-customer-groups`               | `page?, limit?, nameFilter?, full?`                  |
-| `shoprenter-get-customer-group`                | `id`                                                 |
-| `shoprenter-get-customers-in-group`            | `groupId, page?, limit?`                             |
-| `shoprenter-get-customer-group-statistics`     | _(none)_                                             |
-| `shoprenter-get-customer-group-product-prices` | `page?, limit?, productId?, customerGroupId?, full?` |
-| `shoprenter-get-customer-group-product-price`  | `id`                                                 |
+### `resource` — generic CRUD
 
-### Localization
+Access any Shoprenter API resource by name, including those without a dedicated command:
 
-| Tool                            | Scope                              | Params                 |
-| ------------------------------- | ---------------------------------- | ---------------------- |
-| `shoprenter-get-geozones`       | `mcp.localization.location:read`   | `page?, limit?, full?` |
-| `shoprenter-get-geozone`        | `mcp.localization.location:read`   | `id`                   |
-| `shoprenter-get-languages`      | `mcp.localization.language:read`   | `page?, limit?, full?` |
-| `shoprenter-get-language`       | `mcp.localization.language:read`   | `id`                   |
-| `shoprenter-get-weight-classes` | `mcp.localization.weightUnit:read` | `page?, limit?, full?` |
-| `shoprenter-get-weight-class`   | `mcp.localization.weightUnit:read` | `id`                   |
-| `shoprenter-get-length-classes` | `mcp.localization.lengthUnit:read` | `page?, limit?, full?` |
-| `shoprenter-get-length-class`   | `mcp.localization.lengthUnit:read` | `id`                   |
-| `shoprenter-get-tax-classes`    | `mcp.taxClass.taxClass:read`       | `page?, limit?, full?` |
-| `shoprenter-get-tax-class`      | `mcp.taxClass.taxClass:read`       | `id`                   |
+```sh
+n shoprenter resource urlAliases list --limit 10
+n shoprenter resource productDescriptions get <base64-id>
+n shoprenter resource webHooks create --body '{"url":"https://example.com/hook"}'
+```
 
-### Stock statuses (`mcp.product.stockStatus:read`)
+Resource names are resolved via built-in aliases (camelCase, kebab-case, singular/plural all accepted). If unrecognized, the name is used as a literal API path.
 
-| Tool                            | Params                 |
-| ------------------------------- | ---------------------- |
-| `shoprenter-get-stock-statuses` | `page?, limit?, full?` |
-| `shoprenter-get-stock-status`   | `id`                   |
+### `request` — raw API call
 
-### Coupons (`mcp.marketing.coupon:read`, `mcp.marketing.coupon:write`)
+Low-level escape hatch for any Shoprenter API call:
 
-| Tool                                         | Params                                                                       |
-| -------------------------------------------- | ---------------------------------------------------------------------------- |
-| `shoprenter-get-coupons`                     | `page?, limit?, full?, code?`                                                |
-| `shoprenter-get-coupon`                      | `id`                                                                         |
-| `shoprenter-create-coupon`                   | `code, discountType, percentDiscountValue?, fixDiscountValue?, descriptions` |
-| `shoprenter-update-coupon`                   | `id, code?, discountType?, percentDiscountValue?, fixDiscountValue?`         |
-| `shoprenter-delete-coupon`                   | `id`                                                                         |
-| `shoprenter-get-coupon-product-relations`    | `page?, limit?, full?, couponId?`                                            |
-| `shoprenter-get-coupon-product-relation`     | `id`                                                                         |
-| `shoprenter-create-coupon-product-relation`  | `couponId, productId`                                                        |
-| `shoprenter-delete-coupon-product-relation`  | `id`                                                                         |
-| `shoprenter-get-coupon-category-relations`   | `page?, limit?, full?, couponId?`                                            |
-| `shoprenter-get-coupon-category-relation`    | `id`                                                                         |
-| `shoprenter-create-coupon-category-relation` | `couponId, categoryId`                                                       |
-| `shoprenter-delete-coupon-category-relation` | `id`                                                                         |
+```sh
+n shoprenter request /products --method GET --json
+n shoprenter request /batch --method POST --body '{"requests":[...]}'
+n shoprenter request /orderExtend/abc123 --method GET
+```
 
-### CMS content (`mcp.cms.content:read`, `mcp.cms.content:write`)
+| Option        | Default | Description                          |
+| ------------- | ------- | ------------------------------------ |
+| `--method`    | `GET`   | HTTP method (GET, POST, PUT, DELETE) |
+| `--body`      |         | Inline JSON body                     |
+| `--body-file` |         | Path to JSON file, or `-` for stdin  |
+| `--json`      | `false` | Output raw JSON                      |
 
-| Tool                                          | Params                                                        |
-| --------------------------------------------- | ------------------------------------------------------------- |
-| `shoprenter-create-cms-content`               | `sortOrder?, enabled?, author?, datePublished?, descriptions` |
-| `shoprenter-get-cms-content-lists`            | `page?, limit?, full?`                                        |
-| `shoprenter-get-cms-content-list`             | `id`                                                          |
-| `shoprenter-get-cms-content-list-relations`   | `page?, limit?, full?, cmsContentId?, cmsContentListId?`      |
-| `shoprenter-create-cms-content-list-relation` | `cmsContentId, cmsContentListId`                              |
-| `shoprenter-delete-cms-content-list-relation` | `id`                                                          |
+## Resource name aliases
 
-### Utility
+The `resource` command resolves these names to API endpoints. All support hyphenated and camelCase forms.
 
-| Tool                         | Params   |
-| ---------------------------- | -------- |
-| `shoprenter-test-connection` | _(none)_ |
+- **Core:** products, categories, customers, orders, coupons, couponDescriptions, couponCategoryRelations, couponProductRelations, newsletterSubscribers
+- **Orders:** orderProducts, orderTotals, orderHistories, orderInvoices, orderProductOptions, orderProductAddons, orderCreditCards
+- **Products:** productImages, productDescriptions, productSpecials, productOptions, productOptionValues, productOptionValueDescriptions, productTags, productBadges, productBadgeDescriptions, productCategoryRelations, productRelatedProductRelations, productCollateralProductRelations, productAddons, productAddonProductRelations, productClasses, productClassAttributeRelations, productDocumentRelations, productListAttributeValueRelations, productProductBadgeRelations
+- **Config:** scriptTags, orderStatuses, orderStatusDescriptions, paymentModes, shippingModes, shippingLanes, shippingModeDescriptions
+- **Extend:** productExtend, categoryExtend, orderExtend, customerExtend, shippingModeExtend, taxClassExtend
+- **Attributes:** listAttributes, listAttributeValues, listAttributeValueDescriptions, listAttributeWidgets, numberAttributes, numberAttributeValues, numberAttributeWidgets, numberAttributeWidgetLimits, textAttributes, textAttributeValues, textAttributeValueDescriptions, attributeDescriptions, attributeWidgetDescriptions, attributeWidgetCategoryRelations
+- **Geo:** addresses, countries, zones, geoZones
+- **CMS:** cmsContentCmsListRelations, cmsContentDescriptions, cmsContentExtend, cmsContentListDescriptions, cmsContentListExtend, informationDescriptions, informationExtends
+- **Other:** manufacturers, manufacturerDescriptions, taxClasses, taxRates, stockStatuses, stockStatusDescriptions, customerGroups, customerGroupProductPrices, categoryCustomerGroupRelations, loyaltyPoints, loyaltyPointsUsed, documents, documentDescriptions, files, urlAliases, languages, currencies, domains, settings, webHooks, priceMultipliers, weightClasses, weightClassDescriptions, lengthClasses, lengthClassDescriptions, reloadOrderUrls
