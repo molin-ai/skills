@@ -1,326 +1,194 @@
 ---
 name: unas
-description: UNAS.hu Hungarian e-commerce platform - XML API, theme customization. Use for UNAS webshops, API calls, design changes.
+description: UNAS CLI integration via `n unas` commands. Use when working with the UNAS e-commerce platform, running `n unas` commands, setting up UNAS authentication. Also use when the user mentions UNAS shop management, product/order/customer/stock queries via the n-cli, or needs to connect to a UNAS store.
 ---
 
-# UNAS.hu API Reference
+# UNAS CLI
 
-## Safety Rules
+Use `n unas` to manage UNAS shops via the XML API.
 
-- **Confirm before modifying production** - orders, products, stock
-- **GET first** - understand data before set/delete operations
-- **Never expose tokens** in outputs
-- **Requires:** PREMIUM or VIP subscription
-- Docs: unas.hu/tudastar/api
+All requests are POST to `https://api.unas.eu/shop/<endpoint>` with XML bodies. API keys are 40-character strings.
 
----
+Official UNAS API docs: unas.hu/tudastar/api
 
-## Authentication
+Run any command with `--help` to discover its parameters and usage.
 
-**Base URL:** `https://api.unas.eu/shop/`
-**Format:** XML (request & response)
-**Method:** POST
-**Protocol:** TLS 1.2/1.3
+## Auth
 
-### Option 1: API Key (Premium) - Recommended
-
-```bash
-# Get credentials: Admin → Beállítások → Külső kapcsolatok → API kapcsolat
-# Generate API key with required permissions
-
-# Login request
-curl -X POST "https://api.unas.eu/shop/login" \
-  -H "Content-Type: application/xml" \
-  -d '<?xml version="1.0" encoding="UTF-8"?>
-<Params>
-  <ApiKey>YOUR_API_KEY</ApiKey>
-</Params>'
-
-# Response contains Token, use in subsequent requests
+```sh
+n unas auth login          # auto-detect shops linked to your Molin account
+n unas auth login <apiKey> # log in with a specific API key
+n unas auth status         # show active shop, masked key, token validity, plan, permissions
+n unas auth logout         # delete local credential cache
+n unas whoami              # active shop and hostname
 ```
 
-### Option 2: Legacy Auth
+### Env var override (scripts/CI)
 
-```bash
-curl -X POST "https://api.unas.eu/shop/login" \
-  -H "Content-Type: application/xml" \
-  -d '<?xml version="1.0" encoding="UTF-8"?>
-<Params>
-  <Username>your-username</Username>
-  <PasswordCrypt>your-password</PasswordCrypt>
-  <ShopId>your-shop-id</ShopId>
-  <AuthCode>your-auth-code</AuthCode>
-</Params>'
+Skip the login flow by setting env vars directly:
+
+```sh
+export UNAS_API_KEY="your-40-char-api-key"
 ```
 
-### Using Token
+## Resource commands
 
-```bash
-# Token returned in login response, use in Authorization header
-curl -X POST "https://api.unas.eu/shop/getProduct" \
-  -H "Content-Type: application/xml" \
-  -H "Authorization: Bearer {TOKEN}" \
-  -d '<Params>...</Params>'
+### Products (`n unas products`)
+
+| Operation | Description             |
+| --------- | ----------------------- |
+| `list`    | Paginated product list  |
+| `get`     | Fetch by UNAS ID or SKU |
+
+```sh
+n unas products list --limit 50 --offset 0 --state live
+n unas products list --sku ABC123 --content-type full --json
+n unas products list --category-id 10 --status-base 1 --from 2025.01.01
+n unas products get --id 12345
+n unas products get --sku ABC123 --content-type full
+n unas products get --parent PARENT-SKU   # list variants
 ```
 
-**Login response includes:** Token, expiry time, shop ID, subscription package, permissions (accessible endpoints).
+Options: `--limit`, `--offset`, `--state live|deleted`, `--sku`, `--category-id`, `--content-type minimal|short|normal|full`, `--content-param`, `--status-base 0|1|2|3`, `--from`, `--to`, `--lang`, `--json`, `--raw`
 
-**Note:** Token has expiry time - reuse until expired, no need to login before every call.
+### Orders (`n unas orders`)
 
----
+| Operation | Description                                        |
+| --------- | -------------------------------------------------- |
+| `list`    | Paginated order list with filters                  |
+| `get`     | Fetch by human-readable order key (e.g. 1000-1000) |
+| `update`  | Update status, tracking, invoicing, comments       |
 
-## API Endpoints
-
-| Endpoint                                      | Description             |
-| --------------------------------------------- | ----------------------- |
-| `login`                                       | Get auth token          |
-| `getProduct` / `setProduct`                   | Products (query/modify) |
-| `getProductDB` / `setProductDB`               | Product database        |
-| `getOrder` / `setOrder`                       | Orders                  |
-| `getStock` / `setStock`                       | Inventory               |
-| `getCategory` / `setCategory`                 | Categories              |
-| `getCustomer` / `setCustomer`                 | Customers               |
-| `getStorage` / `setStorage`                   | Warehouses              |
-| `getNewsletter` / `setNewsletter`             | Newsletter subscribers  |
-| `getProductParameter` / `setProductParameter` | Product attributes      |
-| `getDeliveryPoint` / `setDeliveryPoint`       | Delivery/pickup points  |
-| `getPackageOffer` / `setPackageOffer`         | Package offers          |
-| `getProductReview` / `setProductReview`       | Product reviews         |
-| `checkCustomer`                               | Validate customer       |
-
-**URL pattern:** `https://api.unas.eu/shop/{endpoint}`
-
----
-
-## Request/Response Format
-
-**Request (XML):**
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<Params>
-  <Id>12345</Id>
-  <!-- endpoint-specific params -->
-</Params>
+```sh
+n unas orders list --limit 10 --status open_normal
+n unas orders list --email customer@example.com --from 2025.01.01
+n unas orders get 1000-1000000
+n unas orders update 1000-1000000 --status shipped --tracking-url https://track.example.com/123
+n unas orders update 1000-1000000 --invoice-status 2 --invoice-number INV-001
 ```
 
-**Response (Success - HTTP 200):**
+List options: `--limit`, `--offset`, `--email`, `--status`, `--status-name`, `--status-id`, `--invoice-status 0|1|2`, `--auto-mark-invoiced`, `--from`, `--to`, `--mod-from`, `--mod-to`, `--lang base|customer`, `--json`, `--raw`
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<Products>
-  <Product>
-    <Id>12345</Id>
-    <Name>Product Name</Name>
-    <Price>1990</Price>
-    <!-- ... -->
-  </Product>
-</Products>
+Update options: `--status`, `--status-email yes|no`, `--seen`, `--tracking-url`, `--package-number`, `--invoice-status`, `--invoice-number`, `--invoice-url`, `--storno-number`, `--storno-url`, `--payment-amount`, `--payment-date`, `--comment`, `--comment-customer`, `--comment-shipping`, `--json`, `--raw`
+
+### Customers (`n unas customers`)
+
+| Operation | Description                                |
+| --------- | ------------------------------------------ |
+| `list`    | Paginated customer list with filters       |
+| `get`     | Fetch by email                             |
+| `check`   | Validate customer credentials (login test) |
+
+```sh
+n unas customers list --limit 100 --email user@example.com
+n unas customers list --reg-from 2025.01.01 --mod-to 2025.06.01
+n unas customers get user@example.com
+n unas customers check myuser mypassword
 ```
 
-**Response (Error - HTTP 400):**
+Options: `--limit`, `--offset`, `--id`, `--email`, `--username`, `--reg-from`, `--reg-to`, `--mod-from`, `--mod-to`, `--login-from`, `--login-to`, `--json`, `--raw`
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<Error>Error message</Error>
+### Stock (`n unas stock`)
+
+| Operation | Description                         |
+| --------- | ----------------------------------- |
+| `list`    | List stock/inventory levels         |
+| `update`  | Update stock quantity for a product |
+
+```sh
+n unas stock list --sku ABC123
+n unas stock list --modified-after 2025-01-01T00:00:00
+n unas stock update --sku ABC123 --qty 50 --action in
+n unas stock update --id 12345 --qty 10 --action out --warehouse-id 2 --comment "sold at event"
 ```
 
----
+List options: `--id`, `--sku`, `--variant1/2/3`, `--limit`, `--offset`, `--modified-after`, `--json`, `--raw`
 
-## Common Operations
+Update options: `--id` or `--sku` (required), `--qty` (required), `--action in|out|modify`, `--warehouse-id`, `--variant1/2/3`, `--price`, `--comment`, `--json`, `--raw`
 
-```bash
-# Get products
-curl -X POST "https://api.unas.eu/shop/getProduct" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/xml" \
-  -d '<?xml version="1.0"?><Params><Limit>100</Limit></Params>'
+### Scripts (`n unas scripts`)
 
-# Get orders
-curl -X POST "https://api.unas.eu/shop/getOrder" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/xml" \
-  -d '<?xml version="1.0"?><Params><Status>new</Status></Params>'
+| Operation | Description            |
+| --------- | ---------------------- |
+| `list`    | List all script tags   |
+| `add`     | Add new script tag     |
+| `modify`  | Modify existing script |
+| `delete`  | Delete a script tag    |
 
-# Update stock
-curl -X POST "https://api.unas.eu/shop/setStock" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/xml" \
-  -d '<?xml version="1.0"?><Params><Product><Sku>ABC123</Sku><Stock>50</Stock></Product></Params>'
-
-# Update order status
-curl -X POST "https://api.unas.eu/shop/setOrder" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/xml" \
-  -d '<?xml version="1.0"?><Params><Order><Id>12345</Id><Status>shipped</Status></Order></Params>'
-
-# Create/update product
-curl -X POST "https://api.unas.eu/shop/setProduct" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/xml" \
-  -d '<?xml version="1.0"?><Params><Product><Sku>NEW123</Sku><Name>New Product</Name><Price>2990</Price><Stock>100</Stock></Product></Params>'
+```sh
+n unas scripts list
+n unas scripts list --id 123
+n unas scripts add --title "My Widget" --src https://cdn.example.com/widget.js --type head --load-type async
+n unas scripts add --title "Inline" --content-file ./snippet.html --type body_end --allow-always
+n unas scripts delete --id 123
 ```
 
----
+Add options: `--title` (required), `--src` or `--content` or `--content-file` (one required), `--type head|body_start|body_end`, `--load-type normal|async|defer`, `--status active|inactive`, `--allow-always`, `--pages`, `--page-filter-type allow|deny`, `--languages`, `--json`, `--raw`
 
-## Rate Limits
+## Standalone resource commands
 
-| Operation               | PREMIUM | VIP     |
-| ----------------------- | ------- | ------- |
-| setProduct (≤100 items) | 1000/hr | 3000/hr |
-| setProduct (>100 items) | 30/hr   | 90/hr   |
+| Command              | Description                        | Key options                                                         |
+| -------------------- | ---------------------------------- | ------------------------------------------------------------------- |
+| `order-statuses`     | List available order statuses      | `--id`, `--type open_normal\|close_ok\|close_fault\|open_prepare`   |
+| `order-types`        | List order types                   | `--id`                                                              |
+| `methods`            | List payment and shipping methods  | `--id`, `--type payment\|shipping`                                  |
+| `categories`         | List product categories            | `--limit`, `--offset`, `--id`, `--name`, `--parent`, `--history`    |
+| `product-parameters` | List product parameter definitions | `--id`, `--type`, `--lang`                                          |
+| `warehouses`         | List additional warehouses         | `--id`, `--name`                                                    |
+| `coupons`            | List coupon codes                  | `--id`, `--limit`, `--offset`                                       |
+| `customer-groups`    | List customer groups               | `--id`, `--name`                                                    |
+| `delivery-points`    | List delivery/pickup locations     | `--group` (required), `--id`                                        |
+| `package-offers`     | List product bundle offers         | `--id`, `--active yes\|no`, `--name`, `--lang`                      |
+| `automatisms`        | List automated workflow processes  | `--id`, `--active`, `--schedule`, `--operation`, `--event`          |
+| `page-content`       | List content elements for pages    | `--id`, `--type`, `--page-id`, `--limit`, `--offset`, `--lang`      |
+| `pages`              | List plus pages and menu items     | `--id`, `--lang`, `--parent`, `--content-id`, `--limit`, `--offset` |
+| `reviews`            | List product reviews               | `--sku`, `--id`, `--confirmed`, `--from`, `--to`, `--lang`          |
+| `newsletter`         | List newsletter subscribers        | `--email`, `--type subscriber\|customer`, `--confirmed`, `--from`   |
+| `storage`            | List files/folders in file manager | `--type all\|file\|folder`, `--get-info`, `--folder`                |
+| `settings`           | Read shop settings                 | `--key`, `--country`, `--lang`                                      |
+| `product-db`         | Export products in bulk DB format  | `--format csv2\|csv\|xls\|xlsx\|txt`, `--output`, `--columns`       |
 
----
+All standalone commands support `--json` and `--raw`.
 
-## Theme Development
+## Advanced commands
 
-### Template Engine - TWIG
+### `request` — raw API call
 
-UNAS uses TWIG templating with **two-level rendering**:
+Low-level escape hatch for any UNAS API call:
 
-- **First pass:** `{% %}` and `{{ }}` markers (standard TWIG)
-- **Second pass:** `[% %]` and `[[ ]]` markers (UNAS-specific)
-
-### Template Structure
-
-```
-main.html              # Main layout (loaded on all pages)
-main_[page].html       # Page-specific override (e.g., main_product_details.html)
-main.cfg               # Global configuration
-content_[name]_[x].html # Page content templates
-box_[name]_[x].html    # Box/widget templates
-```
-
-### Main Template Variables
-
-```twig
-[[ body_start ]]    {# Page start elements #}
-[[ title ]]         {# Page title #}
-[[ breadcrumb ]]    {# Breadcrumb navigation #}
-[[ content ]]       {# Main page content (loads content_*.html) #}
-[[ body_end ]]      {# End elements, integrations #}
-```
-
-### Customization Options
-
-**Via Admin Panel:**
-
-```
-Admin → Megjelenés → Kinézet testreszabása
+```sh
+n unas request /getProduct --body '{"Limit":"10"}'
+n unas request /getScriptTag --xml-body '<Params><Id>123</Id></Params>'
+n unas request /setOrder --xml-body-file order-update.xml
 ```
 
-- **Colors:** Edit primary, secondary, text colors (modern templates)
-- **Custom CSS:** Add CSS code → Save → Activate
-- **HTML modules:** Custom HTML blocks
-- **Triton template:** Visual editor, no coding
+| Option            | Description       |
+| ----------------- | ----------------- |
+| `--body`          | Inline JSON body  |
+| `--body-file`     | Path to JSON file |
+| `--xml-body`      | Inline XML body   |
+| `--xml-body-file` | Path to XML file  |
+| `--json`          | Output raw JSON   |
+| `--raw`           | Output raw XML    |
 
-### Safe Theme Workflow
+## Rate limits
 
+| Plan    | Calls/hour | Notes                          |
+| ------- | ---------- | ------------------------------ |
+| PREMIUM | 2000       | per IP, all endpoints combined |
+| VIP     | 6000       | per IP, all endpoints combined |
+
+- 20 failed calls = 1h IP ban on that endpoint
+- 10 bad auth attempts in 10 min = 2h IP ban on ALL UNAS APIs
+- API maintenance window: midnight ±10 min
+- Max XML payload: 128 MB for set calls
+
+## m-cli diagnostics (`m unas`)
+
+For operations/debugging, use `m unas`:
+
+```sh
+m unas debug <widgetId>       # full diagnostics for UNAS widget integration
+m unas check-script           # verify script installation on merchant website
+m unas ensure-script          # ensure script tag is present on storefront
 ```
-1. Only copy templates you need to customize (uncopied get updates)
-2. Test CSS in browser devtools first
-3. Create main_[page].html for page-specific layouts
-4. Check mobile responsiveness
-```
-
-### CSS Example
-
-```css
-/* Admin → Kinézet testreszabása → Egyedi CSS */
-.btn-primary {
-  background-color: #your-brand-color;
-}
-.product-price {
-  font-size: 1.2em;
-  color: #e74c3c;
-}
-```
-
-**Docs:** unas.hu/tudastar/design
-
----
-
-## App/Integration Development
-
-### Getting Started
-
-1. **Contact UNAS:** Email app@unas.hu with your app description
-2. **Describe:** Purpose, target admin menu location, required API endpoints
-3. **Get approved:** UNAS reviews and grants API access
-4. **Develop:** Use demo integration as reference (GitHub)
-5. **Deploy:** Fixed IP addresses required for security
-
-### Integration Types
-
-| Type           | Description                    | Recommended |
-| -------------- | ------------------------------ | ----------- |
-| **Embedded**   | App UI inside UNAS admin panel | ✅ Yes      |
-| **Redirected** | Opens external URL             | ❌ No       |
-
-### How It Works
-
-```
-1. User installs your app in UNAS admin
-2. API key auto-generated with agreed permissions
-3. Your app accesses shop data via API
-4. App UI displayed inside admin panel (embedded)
-```
-
-### Requirements
-
-- **Subscription:** PREMIUM or VIP (for custom admin integrations)
-- **Fixed IP:** Only whitelisted IPv4 addresses accepted
-- **API endpoints:** Only approved endpoints accessible
-- **Demo:** Available on GitHub as reference
-
-### Partner Benefits
-
-- Access to 7,500+ UNAS webshops
-- Native integration in admin panel
-- Automatic API key generation for users
-- Listed in UNAS integrations catalog
-
-**Contact:** app@unas.hu
-**Docs:** unas.hu/tudastar/integracio
-
----
-
-## Libraries
-
-```bash
-# PHP/Laravel
-composer require szunisoft/laravel-unas
-
-# Go
-go get github.com/perryd01/unaswrappergo
-
-# PHP (Packagist)
-composer require kerekit/unas-api
-
-# Yii2
-composer require vadgab/yii2-unas-api
-```
-
-**Laravel example:**
-
-```php
-$client = app('unas.client');
-$client->getProducts()->chunk(function ($products) {
-    // process products
-}, 50);
-```
-
----
-
-## Troubleshooting
-
-| Error         | Fix                                       |
-| ------------- | ----------------------------------------- |
-| HTTP 400      | Check XML format, required fields         |
-| Invalid token | Re-authenticate, token expired            |
-| Rate limited  | Wait, reduce batch size                   |
-| No access     | Check subscription (PREMIUM/VIP required) |
-
-**Enable API:** Admin → Beállítások → Külső kapcsolatok → API kapcsolat → Enable
-
-**Docs:** unas.hu/tudastar/api
