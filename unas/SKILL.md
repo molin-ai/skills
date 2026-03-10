@@ -127,10 +127,59 @@ Add options: `--title` (required), `--src` or `--content` or `--content-file` (o
 
 **Script tags gotchas:**
 
-- Inline content is automatically wrapped in `<script>` tags by UNAS, so it MUST be valid JavaScript (never raw HTML). To inject HTML, write JS that creates DOM elements.
-- `--allow-always` bypasses cookie consent gates. **Without `AllowAlways: yes`, scripts are gated behind cookie consent and won't run until the visitor accepts.** The CLI automatically handles the UNAS API limitation (which ignores this flag on creation) by performing a two-step create-then-modify operation.
-- UNAS uses aggressive CDN caching. After any script tag change, you MUST clear the cache or changes won't appear: `n unas cache clear`
+- **UNAS wraps inline content in `<script>` tags**: Inline content (`--content` / `--content-file`) is automatically wrapped in `<script>` tags by UNAS, so it MUST be valid JavaScript (never raw HTML). To inject HTML (banners, widgets), write JS that creates DOM elements:
+
+  ```js
+  document.addEventListener("DOMContentLoaded", function () {
+    var el = document.createElement("div");
+    el.innerHTML = "...";
+    var target = document.getElementById("ud_shop_start");
+    if (target) target.insertBefore(el, target.firstChild);
+  });
+  ```
+
+- **AllowAlways requires a two-step workaround**: `--allow-always` on `scripts add` is silently ignored by the UNAS API. The CLI automatically handles this limitation by performing a two-step create-then-modify operation. If you need to do it manually:
+
+  ```sh
+  n unas scripts add --title "My Script" --content-file ./script.js --type head --json
+  # note the returned Id
+  n unas scripts modify <id> --allow-always --json
+  ```
+
+  **Without `AllowAlways: yes`, scripts are gated behind cookie consent and won't run until the visitor accepts.**
+
+- **CDN caching — MUST clear after every script change**: UNAS uses aggressive server-side CDN caching. After adding, modifying, or deleting script tags, changes will NOT appear on the live site until you purge the cache. Without a manual purge, stale content can persist for hours or indefinitely. Always run this after any script tag change:
+
+  ```sh
+  n unas cache clear
+  ```
+
+  This is the API equivalent of clearing the cache from the UNAS admin panel (Beállítások → Gyorsítótár).
+
 - `scripts delete` takes a positional arg, not `--id`: use `n unas scripts delete 123` (not `--id 123`)
+
+### Coupons (`n unas coupons`)
+
+| Operation | Description                 |
+| --------- | --------------------------- |
+| `list`    | List coupon codes           |
+| `add`     | Create a new coupon         |
+| `modify`  | Modify an existing coupon   |
+| `delete`  | Delete a coupon by its code |
+
+```sh
+n unas coupons list [--id CODE] [--limit N] [--json]
+n unas coupons add --id CODE10 --type percent --value 10 --base-type total
+n unas coupons modify CODE10 --value 15 [options]
+n unas coupons delete CODE10
+```
+
+Add options: `--id` (required, coupon code), `--type percent|fix` (required), `--value` (required), `--base-type total|product|shipping|giftcard`, `--max-usability-in-orders N`, `--max-usability-per-customer N`, `--usability-for-new-customers everyone|only_new|only_existing`, `--disable-for-sale-products yes|no`, `--date-start YYYY.MM.DD`, `--date-end YYYY.MM.DD`, `--min-order-value`, `--allowed-for-subscriber none|subscribed|registered_and_subscribed`, `--json`, `--raw`
+
+**Coupon gotchas:**
+
+- The coupon code (`--id`) serves as both the unique identifier and the code customers enter at checkout
+- Coupon codes are case-sensitive
 
 ### Cache (`n unas cache`)
 
@@ -159,7 +208,6 @@ n unas cache clear
 | `categories`         | List product categories            | `--limit`, `--offset`, `--id`, `--name`, `--parent`, `--history`    |
 | `product-parameters` | List product parameter definitions | `--id`, `--type`, `--lang`                                          |
 | `warehouses`         | List additional warehouses         | `--id`, `--name`                                                    |
-| `coupons`            | List coupon codes                  | `--id`, `--limit`, `--offset`                                       |
 | `customer-groups`    | List customer groups               | `--id`, `--name`                                                    |
 | `delivery-points`    | List delivery/pickup locations     | `--group` (required), `--id`                                        |
 | `package-offers`     | List product bundle offers         | `--id`, `--active yes\|no`, `--name`, `--lang`                      |
