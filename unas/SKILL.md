@@ -125,6 +125,30 @@ n unas scripts delete --id 123
 
 Add options: `--title` (required), `--src` or `--content` or `--content-file` (one required), `--type head|body_start|body_end`, `--load-type normal|async|defer`, `--status active|inactive`, `--allow-always`, `--pages`, `--page-filter-type allow|deny`, `--languages`, `--json`, `--raw`
 
+**Script tags gotchas:**
+
+- Inline content is automatically wrapped in `<script>` tags by UNAS, so it MUST be valid JavaScript (never raw HTML). To inject HTML, write JS that creates DOM elements.
+- `--allow-always` bypasses cookie consent gates. **Without `AllowAlways: yes`, scripts are gated behind cookie consent and won't run until the visitor accepts.** The CLI automatically handles the UNAS API limitation (which ignores this flag on creation) by performing a two-step create-then-modify operation.
+- UNAS uses aggressive CDN caching. After any script tag change, you MUST clear the cache or changes won't appear: `n unas cache clear`
+- `scripts delete` takes a positional arg, not `--id`: use `n unas scripts delete 123` (not `--id 123`)
+
+### Cache (`n unas cache`)
+
+| Operation | Description     |
+| --------- | --------------- |
+| `clear`   | Clear CDN cache |
+
+```sh
+n unas cache clear
+```
+
+**CDN caching gotchas:**
+
+- UNAS uses aggressive server-side CDN caching for performance
+- After modifying script tags, pages, or content, changes will NOT appear on the live site until you clear the cache manually
+- The `cache clear` command is equivalent to clearing cache from the UNAS admin panel (Beállítások → Gyorsítótár)
+- The `scripts add`, `scripts modify`, and `scripts delete` commands automatically remind you to clear the cache after successful operations
+
 ## Standalone resource commands
 
 | Command              | Description                        | Key options                                                         |
