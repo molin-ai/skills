@@ -120,7 +120,7 @@ n unas scripts list
 n unas scripts list --id 123
 n unas scripts add --title "My Widget" --src https://cdn.example.com/widget.js --type head --load-type async
 n unas scripts add --title "Inline" --content-file ./snippet.html --type body_end --allow-always
-n unas scripts delete --id 123
+n unas scripts delete 123
 ```
 
 Add options: `--title` (required), `--src` or `--content` or `--content-file` (one required), `--type head|body_start|body_end`, `--load-type normal|async|defer`, `--status active|inactive`, `--allow-always`, `--pages`, `--page-filter-type allow|deny`, `--languages`, `--json`, `--raw`
@@ -146,7 +146,10 @@ Add options: `--title` (required), `--src` or `--content` or `--content-file` (o
   n unas scripts modify <id> --allow-always --json
   ```
 
-  **Without `AllowAlways: yes`, scripts are gated behind cookie consent and won't run until the visitor accepts.**
+  **Cookie consent gating:**
+  - By default, script tags are gated behind the shop's cookie consent banner
+  - If `AllowAlways` is `no` (or not set), the script won't execute until the visitor accepts cookies
+  - For essential UI elements (banners, navigation, layout), `AllowAlways` must be `yes` to ensure they load immediately
 
 - **CDN caching — MUST clear after every script change**: UNAS uses aggressive server-side CDN caching. After adding, modifying, or deleting script tags, changes will NOT appear on the live site until you purge the cache. Without a manual purge, stale content can persist for hours or indefinitely. Always run this after any script tag change:
 
