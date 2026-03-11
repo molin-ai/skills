@@ -51,74 +51,31 @@ n unas products get --parent PARENT-SKU   # list variants
 
 Options: `--limit`, `--offset`, `--state live|deleted`, `--sku`, `--category-id`, `--content-type minimal|short|normal|full`, `--content-param`, `--status-base 0|1|2|3`, `--from`, `--to`, `--lang`, `--json`, `--raw`
 
-**Creating and modifying products — use `n unas request /setProduct`:**
-
-There is no `n unas products add` command. To add or modify products, use the raw request endpoint with an XML file:
+**Creating and modifying products (`n unas products set`):**
 
 ```sh
-n unas request /setProduct --xml-body-file product.xml --raw
+# add a new product
+n unas products set --sku MY-SKU --name "Product Name" --unit db --price-gross 9990 --price-net 7874 --vat "27%" --category-id 100001
+
+# modify with image URLs (UNAS fetches async)
+n unas products set --sku MY-SKU --action modify --image-url https://example.com/img.jpg --image-url https://example.com/img2.jpg
+
+# modify with local image files (base64-encoded inline — use when URL is not publicly accessible)
+n unas products set --sku MY-SKU --action modify --image-file ./photo.jpg --image-file ./photo2.jpg
+
+# pass a raw XML file directly (bypasses all flags)
+n unas products set --xml-file product.xml --raw
 ```
 
-**Minimum required fields for `add`:**
+**Image gotchas:**
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<Products>
-  <Product>
-    <Action>add</Action>
-    <Sku>MY-SKU-123</Sku>
-    <Name><![CDATA[Product Name]]></Name>
-    <Unit><![CDATA[db]]></Unit>
-    <Statuses>
-      <Status>
-        <Type>base</Type>
-        <Value>1</Value>
-      </Status>
-    </Statuses>
-    <Prices>
-      <Vat>27%</Vat>
-      <Price>
-        <Type>normal</Type>
-        <Net>7874</Net>
-        <Gross>9990</Gross>
-      </Price>
-    </Prices>
-    <Categories>
-      <Category>
-        <Type>base</Type>
-        <Id>100001</Id>
-      </Category>
-    </Categories>
-  </Product>
-</Products>
-```
-
-Missing any of `Statuses`, `Prices`, or a base `Category` returns the truncated error: `"Missing necessary data: base"`. The CLI truncates error messages — to see the full error, use raw curl:
-
-```sh
-n vault exec --with UNAS_API_KEY -- bash -c '
-  TOKEN=$(curl -s -X POST "https://api.unas.eu/shop/login" \
-    -H "Content-Type: application/xml" \
-    -d "<Params><ApiKey>$UNAS_API_KEY</ApiKey></Params>" | grep -oP "(?<=<Token>)[^<]+")
-  curl -s -X POST "https://api.unas.eu/shop/setProduct" \
-    -H "Authorization: Bearer $TOKEN" \
-    -H "Content-Type: application/xml" \
-    --data-binary "@product.xml"
-'
-```
-
-**Product images — uploading via setProduct:**
-
-**CRITICAL RULES — read before touching images:**
-
-- `<Content>` tag does NOT work — returns `"No modifiable data"` silently
-- PNG images silently fail — UNAS only stores JPGs. Always convert PNG → JPEG first
-- Images go under `<Images.Image.Import>`, not directly under `<Image>`
+- PNG support via `--image-url` is unconfirmed — UNAS may silently fail for non-JPEG URLs
+- `<Content>` tag does NOT work for images — returns `"No modifiable data"` silently
 - `alt` images require `<Id>` between 1 and 9
-- Image processing is **asynchronous** — allow a few seconds after the API call before checking
+- Image processing is asynchronous — allow a few seconds after the call before checking
 - Always run `n unas cache clear` after uploading images
 
-**Converting PNG to JPEG (required before upload):**
+**Converting PNG to JPEG**
 
 ```python
 # uv run --with Pillow python3 convert.py
@@ -130,92 +87,6 @@ def encode_for_unas(path):
     buf = io.BytesIO()
     img.save(buf, format='JPEG', quality=90)
     return base64.b64encode(buf.getvalue()).decode()
-```
-
-**Option A — base64 encoded (use when source URL blocks external fetches):**
-
-```xml
-<Images>
-  <DefaultFilename>my-product</DefaultFilename>
-  <DefaultAlt>My Product Name</DefaultAlt>
-  <Image>
-    <Type>base</Type>
-    <Filename>my-product-1</Filename>
-    <Alt>Main product image</Alt>
-    <Import>
-      <Encoded>BASE64_JPEG_CONTENT_HERE</Encoded>
-    </Import>
-  </Image>
-  <Image>
-    <Type>alt</Type>
-    <Id>1</Id>
-    <Filename>my-product-2</Filename>
-    <Alt>Second image</Alt>
-    <Import>
-      <Encoded>BASE64_JPEG_CONTENT_HERE</Encoded>
-    </Import>
-  </Image>
-  <Image>
-    <Type>alt</Type>
-    <Id>2</Id>
-    <Filename>my-product-3</Filename>
-    <Alt>Third image</Alt>
-    <Import>
-      <Encoded>BASE64_JPEG_CONTENT_HERE</Encoded>
-    </Import>
-  </Image>
-</Images>
-```
-
-**Option B — external URL (UNAS fetches async; only works if the URL is publicly accessible and no image exists yet on the product):**
-
-```xml
-<Images>
-  <Image>
-    <Type>base</Type>
-    <Filename>my-product-1</Filename>
-    <Alt>Main product image</Alt>
-    <Import>
-      <Url>https://example.com/image.jpg</Url>
-    </Import>
-  </Image>
-  <Image>
-    <Type>alt</Type>
-    <Id>1</Id>
-    <Import>
-      <Url>https://example.com/image2.jpg</Url>
-    </Import>
-  </Image>
-</Images>
-```
-
-Images can be sent in the same `setProduct` call as the product data (on `add`), or in a separate `modify` call afterwards. Both work.
-
-**Full Python workflow for scraping + uploading a product with images:**
-
-```python
-import base64, io, urllib.request
-# uv run --with Pillow python3
-from PIL import Image
-
-def download_image(url, referer=None):
-    headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'}
-    if referer:
-        headers['Referer'] = referer
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req) as resp:
-        return resp.read()
-
-def encode_for_unas(path_or_bytes):
-    data = path_or_bytes if isinstance(path_or_bytes, bytes) else open(path_or_bytes, 'rb').read()
-    img = Image.open(io.BytesIO(data)).convert('RGB')
-    buf = io.BytesIO()
-    img.save(buf, format='JPEG', quality=90)
-    return base64.b64encode(buf.getvalue()).decode()
-
-# Download, encode, build XML, then:
-# n unas request /setProduct --xml-body-file product.xml --raw
-# n unas cache clear
 ```
 
 ### Orders (`n unas orders`)
