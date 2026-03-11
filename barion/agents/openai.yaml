@@ -1,0 +1,4 @@
+interface:
+  display_name: "Barion CLI"
+  short_description: "Run Barion ecommerce payment flows"
+  default_prompt: "Use $barion to operate the bundled Barion CLI for checkout start, payment state, and post-payment lifecycle actions."

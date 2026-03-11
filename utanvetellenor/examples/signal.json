@@ -1,0 +1,9 @@
+{
+  "email": "customer@example.com",
+  "phoneNumber": "+36301234567",
+  "countryCode": "HU",
+  "postalCode": "1117",
+  "addressLine": "Example utca 1.",
+  "orderId": "ORDER-10001",
+  "outcome": -1
+}

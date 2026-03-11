@@ -1,0 +1,19 @@
+{
+  "name": "barion-cli",
+  "version": "0.1.0",
+  "description": "CLI and skill package for the Barion payment API",
+  "type": "module",
+  "bin": {
+    "barion": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node ./src/cli.js",
+    "start:example": "node ./src/cli.js start --dry-run --data-file ./examples/start.json",
+    "state:example": "node ./src/cli.js state --dry-run --payment-id 11111111111111118111111111111111"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "license": "MIT"
+}

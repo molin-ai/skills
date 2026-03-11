@@ -1,0 +1,31 @@
+{
+  "PaymentType": "Immediate",
+  "GuestCheckOut": true,
+  "FundingSources": [
+    "All"
+  ],
+  "PaymentRequestId": "BARION-CLI-START-001",
+  "PayerHint": "customer@example.com",
+  "Locale": "hu-HU",
+  "Currency": "HUF",
+  "RedirectUrl": "https://merchant.example.com/barion/redirect",
+  "CallbackUrl": "https://merchant.example.com/api/barion/callback",
+  "Transactions": [
+    {
+      "POSTransactionId": "ORDER-10001",
+      "Payee": "merchant@example.com",
+      "Total": 19990,
+      "Items": [
+        {
+          "Name": "Test Product",
+          "Description": "Barion CLI sample item",
+          "Quantity": 1,
+          "Unit": "db",
+          "UnitPrice": 19990,
+          "ItemTotal": 19990,
+          "SKU": "SKU-10001"
+        }
+      ]
+    }
+  ]
+}

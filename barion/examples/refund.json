@@ -1,0 +1,11 @@
+{
+  "PaymentId": "11111111111111118111111111111111",
+  "TransactionsToRefund": [
+    {
+      "TransactionId": "22222222-2222-4222-8222-222222222222",
+      "POSTransactionId": "ORDER-10001",
+      "AmountToRefund": 19990,
+      "Comment": "Customer refund"
+    }
+  ]
+}
