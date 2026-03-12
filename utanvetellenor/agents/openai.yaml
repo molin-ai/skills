@@ -1,0 +1,4 @@
+interface:
+  display_name: "Utanvet-Ellenor CLI"
+  short_description: "Run UVE checks and signals safely"
+  default_prompt: "Use $utanvetellenor to decide when to run the bundled Utanvet-Ellenor CLI before risky downstream customer actions and to send outcome signals later."

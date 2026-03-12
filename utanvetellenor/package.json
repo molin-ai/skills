@@ -1,0 +1,19 @@
+{
+  "name": "utanvetellenor-cli",
+  "version": "0.1.0",
+  "description": "CLI for the Utanvet-Ellenor API",
+  "type": "module",
+  "bin": {
+    "uve": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node ./src/cli.js",
+    "request:example": "node ./src/cli.js request --data-file ./examples/request.json --dry-run",
+    "signal:example": "node ./src/cli.js signal --data-file ./examples/signal.json --dry-run"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "license": "MIT"
+}
