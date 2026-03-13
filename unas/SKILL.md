@@ -42,14 +42,14 @@ export UNAS_API_KEY="your-40-char-api-key"
 
 ```sh
 n unas products list --limit 50 --offset 0 --state live
-n unas products list --sku ABC123 --content-type full --json
+n unas products list --sku ABC123 --content-type full --xml
 n unas products list --category-id 10 --status-base 1 --from 2025.01.01
 n unas products get --id 12345
 n unas products get --sku ABC123 --content-type full
 n unas products get --parent PARENT-SKU   # list variants
 ```
 
-Options: `--limit`, `--offset`, `--state live|deleted`, `--sku`, `--category-id`, `--content-type minimal|short|normal|full`, `--content-param`, `--status-base 0|1|2|3`, `--from`, `--to`, `--lang`, `--json`, `--raw`
+Options: `--limit`, `--offset`, `--state live|deleted`, `--sku`, `--category-id`, `--content-type minimal|short|normal|full`, `--content-param`, `--status-base 0|1|2|3`, `--from`, `--to`, `--lang`, `--xml`
 
 **Creating and modifying products (`n unas products set`):**
 
@@ -64,7 +64,7 @@ n unas products set --sku MY-SKU --action modify --image-url https://example.com
 n unas products set --sku MY-SKU --action modify --image-file ./photo.jpg --image-file ./photo2.jpg
 
 # pass a raw XML file directly (bypasses all flags)
-n unas products set --xml-file product.xml --raw
+n unas products set --xml-file product.xml --xml
 ```
 
 **Image gotchas:**
@@ -105,9 +105,9 @@ n unas orders update 1000-1000000 --status shipped --tracking-url https://track.
 n unas orders update 1000-1000000 --invoice-status 2 --invoice-number INV-001
 ```
 
-List options: `--limit`, `--offset`, `--email`, `--status`, `--status-name`, `--status-id`, `--invoice-status 0|1|2`, `--auto-mark-invoiced`, `--from`, `--to`, `--mod-from`, `--mod-to`, `--lang base|customer`, `--json`, `--raw`
+List options: `--limit`, `--offset`, `--email`, `--status`, `--status-name`, `--status-id`, `--invoice-status 0|1|2`, `--auto-mark-invoiced`, `--from`, `--to`, `--mod-from`, `--mod-to`, `--lang base|customer`, `--xml`
 
-Update options: `--status`, `--status-email yes|no`, `--seen`, `--tracking-url`, `--package-number`, `--invoice-status`, `--invoice-number`, `--invoice-url`, `--storno-number`, `--storno-url`, `--payment-amount`, `--payment-date`, `--comment`, `--comment-customer`, `--comment-shipping`, `--json`, `--raw`
+Update options: `--status`, `--status-email yes|no`, `--seen`, `--tracking-url`, `--package-number`, `--shipping-name`, `--shipping-zip`, `--shipping-city`, `--shipping-street`, `--shipping-country`, `--shipping-county`, `--billing-name`, `--billing-zip`, `--billing-city`, `--billing-street`, `--billing-country`, `--billing-county`, `--billing-company`, `--billing-vat-number`, `--invoice-status`, `--invoice-number`, `--invoice-url`, `--storno-number`, `--storno-url`, `--payment-amount`, `--payment-date`, `--comment`, `--comment-customer`, `--comment-shipping`, `--xml`
 
 ### Customers (`n unas customers`)
 
@@ -124,7 +124,7 @@ n unas customers get user@example.com
 n unas customers check myuser mypassword
 ```
 
-Options: `--limit`, `--offset`, `--id`, `--email`, `--username`, `--reg-from`, `--reg-to`, `--mod-from`, `--mod-to`, `--login-from`, `--login-to`, `--json`, `--raw`
+Options: `--limit`, `--offset`, `--id`, `--email`, `--username`, `--reg-from`, `--reg-to`, `--mod-from`, `--mod-to`, `--login-from`, `--login-to`, `--xml`
 
 ### Stock (`n unas stock`)
 
@@ -140,9 +140,9 @@ n unas stock update --sku ABC123 --qty 50 --action in
 n unas stock update --id 12345 --qty 10 --action out --warehouse-id 2 --comment "sold at event"
 ```
 
-List options: `--id`, `--sku`, `--variant1/2/3`, `--limit`, `--offset`, `--modified-after`, `--json`, `--raw`
+List options: `--id`, `--sku`, `--variant1/2/3`, `--limit`, `--offset`, `--modified-after`, `--xml`
 
-Update options: `--id` or `--sku` (required), `--qty` (required), `--action in|out|modify`, `--warehouse-id`, `--variant1/2/3`, `--price`, `--comment`, `--json`, `--raw`
+Update options: `--id` or `--sku` (required), `--qty` (required), `--action in|out|modify`, `--warehouse-id`, `--variant1/2/3`, `--price`, `--comment`, `--xml`
 
 ### Scripts (`n unas scripts`)
 
@@ -161,7 +161,7 @@ n unas scripts add --title "Inline" --content-file ./snippet.html --type body_en
 n unas scripts delete 123
 ```
 
-Add options: `--title` (required), `--src` or `--content` or `--content-file` (one required), `--type head|body_start|body_end`, `--load-type normal|async|defer`, `--status active|inactive`, `--allow-always`, `--pages`, `--page-filter-type allow|deny`, `--languages`, `--json`, `--raw`
+Add options: `--title` (required), `--src` or `--content` or `--content-file` (one required), `--type head|body_start|body_end`, `--load-type normal|async|defer`, `--status active|inactive`, `--allow-always`, `--pages`, `--page-filter-type allow|deny`, `--languages`, `--xml`
 
 **Script tags gotchas:**
 
@@ -179,9 +179,9 @@ Add options: `--title` (required), `--src` or `--content` or `--content-file` (o
 - **AllowAlways requires a two-step workaround**: `--allow-always` on `scripts add` is silently ignored by the UNAS API. The CLI automatically handles this limitation by performing a two-step create-then-modify operation. If you need to do it manually:
 
   ```sh
-  n unas scripts add --title "My Script" --content-file ./script.js --type head --json
+  n unas scripts add --title "My Script" --content-file ./script.js --type head --xml
   # note the returned Id
-  n unas scripts modify <id> --allow-always --json
+  n unas scripts modify <id> --allow-always --xml
   ```
 
   **Cookie consent gating:**
@@ -209,13 +209,13 @@ Add options: `--title` (required), `--src` or `--content` or `--content-file` (o
 | `delete`  | Delete a coupon by its code |
 
 ```sh
-n unas coupons list [--id CODE] [--limit N] [--json]
+n unas coupons list [--id CODE] [--limit N] [--xml]
 n unas coupons add --id CODE10 --type percent --value 10 --base-type total
 n unas coupons modify CODE10 --value 15 [options]
 n unas coupons delete CODE10
 ```
 
-Add options: `--id` (required, coupon code), `--type percent|fix` (required), `--value` (required), `--base-type total|product|shipping|giftcard`, `--max-usability-in-orders N`, `--max-usability-per-customer N`, `--usability-for-new-customers everyone|only_new|only_existing`, `--disable-for-sale-products yes|no`, `--date-start YYYY.MM.DD`, `--date-end YYYY.MM.DD`, `--min-order-value`, `--allowed-for-subscriber none|subscribed|registered_and_subscribed`, `--json`, `--raw`
+Add options: `--id` (required, coupon code), `--type percent|fix` (required), `--value` (required), `--base-type total|product|shipping|giftcard`, `--max-usability-in-orders N`, `--max-usability-per-customer N`, `--usability-for-new-customers everyone|only_new|only_existing`, `--disable-for-sale-products yes|no`, `--date-start YYYY.MM.DD`, `--date-end YYYY.MM.DD`, `--min-order-value`, `--allowed-for-subscriber none|subscribed|registered_and_subscribed`, `--xml`
 
 **Coupon gotchas:**
 
@@ -261,28 +261,24 @@ n unas cache clear
 | `settings`           | Read shop settings                 | `--key`, `--country`, `--lang`                                      |
 | `product-db`         | Export products in bulk DB format  | `--format csv2\|csv\|xls\|xlsx\|txt`, `--output`, `--columns`       |
 
-All standalone commands support `--json` and `--raw`.
+All standalone commands support `--xml`.
 
 ## Advanced commands
 
 ### `request` — raw API call
 
-Low-level escape hatch for any UNAS API call:
+Low-level escape hatch for any UNAS API call. Pass raw XML directly.
 
 ```sh
-n unas request /getProduct --body '{"Limit":"10"}'
+n unas request /getProduct --xml-body '<Params><Limit>10</Limit></Params>'
 n unas request /getScriptTag --xml-body '<Params><Id>123</Id></Params>'
 n unas request /setOrder --xml-body-file order-update.xml
 ```
 
-| Option            | Description       |
-| ----------------- | ----------------- |
-| `--body`          | Inline JSON body  |
-| `--body-file`     | Path to JSON file |
-| `--xml-body`      | Inline XML body   |
-| `--xml-body-file` | Path to XML file  |
-| `--json`          | Output raw JSON   |
-| `--raw`           | Output raw XML    |
+| Option            | Description      |
+| ----------------- | ---------------- |
+| `--xml-body`      | Inline XML body  |
+| `--xml-body-file` | Path to XML file |
 
 ## Rate limits
 
