@@ -267,7 +267,7 @@ All standalone commands support `--xml`.
 
 ### `request` — raw API call
 
-Low-level escape hatch for any UNAS API call. Pass raw XML directly.
+Low-level escape hatch for any UNAS API call. Pass raw XML directly. Output is always raw XML.
 
 ```sh
 n unas request /getProduct --xml-body '<Params><Limit>10</Limit></Params>'
