@@ -297,6 +297,10 @@ All standalone commands support `--xml`.
 
 Before guessing XML structures or experimenting with API calls, go to **unas.hu/tudastar/api** and read the Adatszerkezet (data structure) page for the relevant endpoint. The docs clearly mark which fields are `GET`, `SET`, or both. For example, `Items.Item` on `/getOrder` and `/setOrder` is marked as both `GET` and `SET`, confirming it's readable and writable. Do NOT waste API calls on trial and error when the answer is in the docs.
 
+### `<Action>modify</Action>` is REQUIRED for modifying existing records
+
+All UNAS `/set*` endpoints (`/setOrder`, `/setProduct`, `/setScriptTag`, etc.) default to **create** when `<Action>` is omitted. If you forget `<Action>modify</Action>`, UNAS will either create a duplicate record or fail silently — it will NOT update the existing one. This is the most common mistake when using `n unas request` with raw XML. The high-level CLI commands always include this automatically.
+
 ### Minimize failed API calls to avoid IP bans
 
 UNAS enforces strict rate limits: **20 failed calls = 1 hour IP ban on that endpoint**. Every malformed request, wrong XML structure, or missing field counts toward this limit. Plan your API calls carefully:
