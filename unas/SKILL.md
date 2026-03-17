@@ -109,6 +109,34 @@ List options: `--limit`, `--offset`, `--email`, `--status`, `--status-name`, `--
 
 Update options: `--status`, `--status-email yes|no`, `--seen`, `--tracking-url`, `--package-number`, `--shipping-name`, `--shipping-zip`, `--shipping-city`, `--shipping-street`, `--shipping-country`, `--shipping-county`, `--billing-name`, `--billing-zip`, `--billing-city`, `--billing-street`, `--billing-country`, `--billing-county`, `--billing-company`, `--billing-vat-number`, `--invoice-status`, `--invoice-number`, `--invoice-url`, `--storno-number`, `--storno-url`, `--payment-amount`, `--payment-date`, `--comment`, `--comment-customer`, `--comment-shipping`, `--xml`
 
+#### Order items (`n unas orders items`)
+
+Safe subcommands for modifying individual line items without risk of accidentally deleting other items. Each command uses a fetch-modify-replace pattern internally: fetches the current items, applies the change, and sends the complete list back.
+
+**WARNING:** The UNAS `setOrder` API uses **full replacement** semantics for `<Items>` — sending items replaces ALL items in the order. These subcommands handle this safely. NEVER use raw `n unas request /setOrder` with `<Items>` unless you are sending the complete item list.
+
+| Operation | Description                         |
+| --------- | ----------------------------------- |
+| `list`    | List current line items of an order |
+| `add`     | Add a product by SKU                |
+| `remove`  | Remove an item by SKU               |
+| `set-qty` | Change quantity of an item by SKU   |
+
+```sh
+n unas orders items list 1000-1000000
+n unas orders items list 1000-1000000 --xml
+n unas orders items add 1000-1000000 --sku ABC123
+n unas orders items add 1000-1000000 --sku ABC123 --quantity 3
+n unas orders items remove 1000-1000000 --sku ABC123
+n unas orders items set-qty 1000-1000000 --sku ABC123 --quantity 5
+```
+
+- `add` auto-resolves product name, unit, price, and VAT from the catalog via `/getProduct`
+- `add` errors if the SKU already exists in the order (use `set-qty` instead)
+- `remove` errors if removing would leave 0 items (UNAS requires at least 1 item)
+- `set-qty` errors if quantity is 0 (use `remove` to delete an item)
+- All commands show a color-coded diff summary before sending the update
+
 ### Customers (`n unas customers`)
 
 | Operation | Description                                |
@@ -262,6 +290,22 @@ n unas cache clear
 | `product-db`         | Export products in bulk DB format  | `--format csv2\|csv\|xls\|xlsx\|txt`, `--output`, `--columns`       |
 
 All standalone commands support `--xml`.
+
+## Critical rules for working with the UNAS API
+
+### ALWAYS read the official docs FIRST
+
+Before guessing XML structures or experimenting with API calls, go to **unas.hu/tudastar/api** and read the Adatszerkezet (data structure) page for the relevant endpoint. The docs clearly mark which fields are `GET`, `SET`, or both. For example, `Items.Item` on `/getOrder` and `/setOrder` is marked as both `GET` and `SET`, confirming it's readable and writable. Do NOT waste API calls on trial and error when the answer is in the docs.
+
+### Minimize failed API calls to avoid IP bans
+
+UNAS enforces strict rate limits: **20 failed calls = 1 hour IP ban on that endpoint**. Every malformed request, wrong XML structure, or missing field counts toward this limit. Plan your API calls carefully:
+
+1. Read the docs first (see above)
+2. Use `--xml` flag to inspect raw responses before making write calls
+3. Use the high-level CLI commands (`orders items add/remove/set-qty`) instead of raw `request /setOrder` — they handle the XML structure correctly
+4. If you must use `request`, build the XML body in a file and review it before sending
+5. Test against a non-critical order first
 
 ## Advanced commands
 
