@@ -51,6 +51,8 @@ n unas products get --parent PARENT-SKU   # list variants
 
 Options: `--limit`, `--offset`, `--state live|deleted`, `--sku`, `--category-id`, `--content-type minimal|short|normal|full`, `--content-param`, `--status-base 0|1|2|3`, `--from`, `--to`, `--lang`, `--xml`
 
+`--status-base` meanings: `0` inactive, `1` active, `2` active + new, `3` active + not purchasable. In raw API docs, pagination fields are `LimitNum` and `LimitStart`.
+
 **Creating and modifying products (`n unas products set`):**
 
 ```sh
@@ -74,6 +76,12 @@ n unas products set --xml-file product.xml --xml
 - `alt` images require `<Id>` between 1 and 9
 - Image processing is asynchronous — allow a few seconds after the call before checking
 - Always run `n unas cache clear` after uploading images
+
+**Product/feed gotchas:**
+
+- `Export.Status`: `1` = globally exportable, `0` = globally blocked
+- `Export.Forbidden.Format` is platform-specific blocking; CSV `Export tiltás` uses pipe-separated feed names, e.g. `facebook_product_feed|instagram_product_feed`
+- For Meta stock handling, prefer Commerce Manager availability filters; this is outside the UNAS API
 
 **Converting PNG to JPEG**
 
@@ -311,6 +319,8 @@ UNAS enforces strict rate limits: **20 failed calls = 1 hour IP ban on that endp
 4. If you must use `request`, build the XML body in a file and review it before sending
 5. Test against a non-critical order first
 
+Use `product-db` / raw `getProductDB` for full-catalog exports instead of paging `getProduct`; it is the real "fetch everything" endpoint.
+
 ## Advanced commands
 
 ### `request` — raw API call
@@ -339,6 +349,9 @@ n unas request /setOrder --xml-body-file order-update.xml
 - 10 bad auth attempts in 10 min = 2h IP ban on ALL UNAS APIs
 - API maintenance window: midnight ±10 min
 - Max XML payload: 128 MB for set calls
+- `setProduct`: max 100 products/call. Up to 100 products: PREMIUM `1000/h`, VIP `3000/h`. Over 100 products: PREMIUM `30/h`, VIP `90/h`
+- `setProductDB`: `<=100kB` PREMIUM `30/h`, VIP `90/h`; `>100kB` PREMIUM `10/h`, VIP `30/h`
+- `getProduct`: multi-product fetches are PREMIUM `30/h`, VIP `90/h`; single-product lookups are much higher (`VIP 3000/h`)
 
 ## m-cli diagnostics (`m unas`)
 
