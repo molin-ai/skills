@@ -53,6 +53,8 @@ Options: `--limit`, `--offset`, `--state live|deleted`, `--sku`, `--category-id`
 
 `--status-base` meanings: `0` inactive, `1` active, `2` active + new, `3` active + not purchasable. In raw API docs, pagination fields are `LimitNum` and `LimitStart`.
 
+`--status-base` meanings: `0` inactive, `1` active, `2` active + new, `3` active + not purchasable. In raw API docs, pagination fields are `LimitNum` and `LimitStart`.
+
 **Creating and modifying products (`n unas products set`):**
 
 ```sh
@@ -212,6 +214,8 @@ Add options: `--title` (required), `--src` or `--content` or `--content-file` (o
   });
   ```
 
+- **Placement is theme-specific**: `ud_shop_start` may resolve to `body` or the wrong container. Inspect the live DOM and preview by manually injecting the banner in your browser first; often the correct spot is after the header / before the main slider.
+
 - **AllowAlways requires a two-step workaround**: `--allow-always` on `scripts add` is silently ignored by the UNAS API. The CLI automatically handles this limitation by performing a two-step create-then-modify operation. If you need to do it manually:
 
   ```sh
@@ -225,7 +229,7 @@ Add options: `--title` (required), `--src` or `--content` or `--content-file` (o
   - If `AllowAlways` is `no` (or not set), the script won't execute until the visitor accepts cookies
   - For essential UI elements (banners, navigation, layout), `AllowAlways` must be `yes` to ensure they load immediately
 
-- **CDN caching — MUST clear after every script change**: UNAS uses aggressive server-side CDN caching. After adding, modifying, or deleting script tags, changes will NOT appear on the live site until you purge the cache. Without a manual purge, stale content can persist for hours or indefinitely. Always run this after any script tag change:
+- **CDN caching — MUST clear after every script change**: UNAS uses aggressive server-side CDN caching. After adding, modifying, or deleting script tags, changes may still take hours to appear even after a purge. For banners/widgets: upload it, clear cache, verify placement with manual browser injection, then tell the user to wait. If the script config is correct, missing live appearance is usually cache, not your mistake. Always run this after any script tag change:
 
   ```sh
   n unas cache clear
@@ -318,6 +322,8 @@ UNAS enforces strict rate limits: **20 failed calls = 1 hour IP ban on that endp
 3. Use the high-level CLI commands (`orders items add/remove/set-qty`) instead of raw `request /setOrder` — they handle the XML structure correctly
 4. If you must use `request`, build the XML body in a file and review it before sending
 5. Test against a non-critical order first
+
+Use `product-db` / raw `getProductDB` for full-catalog exports instead of paging `getProduct`; it is the real "fetch everything" endpoint.
 
 Use `product-db` / raw `getProductDB` for full-catalog exports instead of paging `getProduct`; it is the real "fetch everything" endpoint.
 
