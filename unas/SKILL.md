@@ -53,8 +53,6 @@ Options: `--limit`, `--offset`, `--state live|deleted`, `--sku`, `--category-id`
 
 `--status-base` meanings: `0` inactive, `1` active, `2` active + new, `3` active + not purchasable. In raw API docs, pagination fields are `LimitNum` and `LimitStart`.
 
-`--status-base` meanings: `0` inactive, `1` active, `2` active + new, `3` active + not purchasable. In raw API docs, pagination fields are `LimitNum` and `LimitStart`.
-
 **Creating and modifying products (`n unas products set`):**
 
 ```sh
@@ -322,8 +320,6 @@ UNAS enforces strict rate limits: **20 failed calls = 1 hour IP ban on that endp
 3. Use the high-level CLI commands (`orders items add/remove/set-qty`) instead of raw `request /setOrder` — they handle the XML structure correctly
 4. If you must use `request`, build the XML body in a file and review it before sending
 5. Test against a non-critical order first
-
-Use `product-db` / raw `getProductDB` for full-catalog exports instead of paging `getProduct`; it is the real "fetch everything" endpoint.
 
 Use `product-db` / raw `getProductDB` for full-catalog exports instead of paging `getProduct`; it is the real "fetch everything" endpoint.
 
