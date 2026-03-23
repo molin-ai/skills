@@ -1,6 +1,6 @@
 ---
 name: molin
-description: Molin AI company skill for support, product/pricing questions, marketing copy, dashboard navigation, and Mintlify docs. Use when the user mentions Molin, molin.ai, Molin plans/features/benefits, Molin dashboard menus, or Molin support policies.
+description: Molin AI company skill for general product knowledge, support tone, marketing copy, dashboard orientation, and docs orientation. Use when the user mentions Molin, molin.ai, Molin features, Molin support, Molin dashboard areas, or Molin documentation.
 ---
 
 # Molin AI
@@ -9,51 +9,29 @@ Use this skill for Molin-specific work.
 
 ## When To Use
 
-- Molin support or sales answers
-- Molin pricing, plans, features, benefits, or positioning
-- Molin marketing copy, landing page analysis, or website IA
-- Molin dashboard navigation, route mapping, or menu discovery
-- Molin docs, APIs, Mintlify structure, or `llms.txt`
+- Molin support or product questions
+- Molin marketing copy or positioning
+- Molin features, benefits, or use cases
+- Molin dashboard orientation
+- Molin docs or API orientation
 
 ## Workflow
 
-1. Decide which reference file matches the task.
-2. Prefer the Jarvis repo as the source of truth for current Molin product structure.
-3. Prefer current canonical `/app/...` routes. Treat older `/app/shop-ai/...` paths as compatibility redirects unless the task specifically asks about legacy URLs.
-4. If exact pricing or public-site copy must be current, verify against the freshest available source before answering. If you only have local repo context, say that explicitly.
+1. Decide which reference file fits the task.
+2. Use the most current public Molin knowledge available.
+3. Keep answers practical and customer-focused.
+4. If pricing, promotions, or other unstable commercial details matter, verify them before answering.
 5. Always format customer-facing text in Markdown.
 
 ## Reference Files
 
-- Public site, landing pages, pricing, and positioning: `references/marketing-and-site.md`
-- Dashboard routes, menus, settings, Mintlify docs, and `llms.txt`: `references/dashboard-and-docs.md`
-- Support assistant rules and canned Molin guidance: `references/support-playbook.md`
-
-## Best Source Files In Jarvis
-
-Read these first when you need primary sources:
-
-- `workers/molin-v2/routers/website.router.js`
-- `workers/molin-v2/routes.js`
-- `workers/molin-v2/pages/settings.html.js`
-- `workers/molin-v2/middleware.js`
-- `workers/molin-v2/routers/llms-txt.router.js`
-- `workers/molin-v2/services/LandingPageService.js`
-- `packages/web-components/lib/m-dashboard-sidebar.js`
-- `packages/web-components/lib/m-settings-sidebar.js`
-- `packages/web-components/lib/w-navbar.js`
-- `packages/web-components/lib/w-footer.js`
-- `mintlify/docs.json`
+- Public positioning and site structure: `references/marketing-and-site.md`
+- Dashboard areas and docs orientation: `references/dashboard-and-docs.md`
+- Support tone and safe response rules: `references/support-playbook.md`
 
 ## Output Guidance
 
 - For support answers, use `references/support-playbook.md`.
-- For internal product questions, cite the relevant Jarvis paths.
-- For dashboard/menu questions, distinguish between:
-  - dashboard sidebar
-  - settings sidebar
-  - public website navigation
-- For marketing work, separate:
-  - factual product capabilities
-  - positioning/benefits
-  - unstable commercial details such as pricing or promotions
+- For marketing work, separate product capabilities from messaging.
+- For dashboard questions, describe areas and user-facing sections rather than implementation details.
+- Prefer clear, helpful answers over internal terminology.
