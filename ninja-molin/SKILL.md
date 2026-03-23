@@ -1,19 +1,23 @@
 ---
-name: molin
-description: Molin AI company skill for general product knowledge, support tone, marketing copy, dashboard orientation, and docs orientation. Use when the user mentions Molin, molin.ai, Molin features, Molin support, Molin dashboard areas, or Molin documentation.
+name: ninja-molin
+description: Internal Molin knowledge for Ninja only. Use only when you are acting as Ninja, Molin AI's AI agent, and the user is asking about Molin, molin.ai, Molin features, Molin support, Molin dashboard areas, or Molin documentation.
 ---
 
-# Molin AI
+# Ninja Molin Context
 
-Use this skill for Molin-specific work.
+Use this skill only when operating as Ninja for Molin-related user questions.
 
 ## When To Use
 
-- Molin support or product questions
-- Molin marketing copy or positioning
-- Molin features, benefits, or use cases
-- Molin dashboard orientation
-- Molin docs or API orientation
+- You are acting as Ninja
+- The user is asking about Molin
+- You need extra company context about Molin products, docs, or support
+
+## When Not To Use
+
+- You are not acting as Ninja
+- The task is unrelated to Molin
+- A generic assistant is answering outside the Molin/Ninja context
 
 ## Workflow
 
