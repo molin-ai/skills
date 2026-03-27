@@ -1,13 +1,18 @@
 ---
 name: shopify
-description: Shopify CLI for apps, themes, Hydrogen storefronts, and Ninja Shopify auth/GraphQL workflows.
+description: Molin's own Shopify CLI (n shopify), official Shopify CLI, themes, Hydrogen storefronts, and Ninja Shopify auth/GraphQL workflows.
 ---
 
 # Shopify integration
 
-## Ninja CLI (`n shopify`)
+**IMPORTANT:** `n` is Molin's own CLI, NOT the official Shopify CLI (`shopify`). They are two separate tools:
 
-"n shopify dev" replaces and delegates to the official "shopify" CLI. It ensures authentication and installs the CLI if missing.
+- `n shopify …` is Molin's CLI for querying store data via the Molin app's access token
+- `shopify …` is the official Shopify CLI for app/theme/hydrogen development
+
+## Molin's Ninja CLI (`n shopify`)
+
+`n shopify` is Molin's own CLI wrapper. The `n shopify dev` subcommands delegate to the official Shopify CLI under the hood, but all other `n shopify` commands (info, orders, customers, graphql) use Molin's own sandbox API.
 
 ### Store data (requires Molin app installed on the store)
 
