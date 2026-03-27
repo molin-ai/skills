@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shopify Reviews"
+  short_description: "Inspect Shopify review app data"
+  default_prompt: "Use $shopify-reviews to inspect Shopify review data, discover review-app metafields, and fetch Judge.me review summaries via Shopify Admin GraphQL."
